@@ -1,4 +1,5 @@
-\mainpage DATOR: Data Analysis Toolkit for ORRUBA
+DATOR: Data Analysis Toolkit for ORRUBA {#mainpage}
+=========
 
 This is a toolkit of software designed to assist with data analysis for ORRUBA experiments. Specifically, it aims to handle cases where ORRUBA is coupled to additional detector systems such as Gretina, the S800, or others.
 
@@ -10,8 +11,7 @@ In practice, what this means is the toolkit can handle data from *any* combinati
 
 The data pipeline for DATOR is shown below.
 
-\image html DATOR_pipeline.png
-\image latex DATOR_pipeline.png
+![image](./img/DATOR_pipeline.png)
 
 ### Creating the merged Global.dat
 
@@ -29,8 +29,7 @@ The next step of the analysis is denoted "time correlation", and may also be ref
 
 The real magic of analysis happens in the "physics processing" stage. Here each GEB sub-event is read in, and passed to a user-defined "processor" object, according to its GEB type. So for example, a Type-1 event (Gretina signal decomp) would be passed to a Type-1 processor that estimates the initial interaction point for the Gretina hit, and transforms that into a global coordinate system. A Type-19 event (ORRUBA data) could be processed by conducting a pedestal subtraction and gain alignment, matching front- and back- hits from the same detector, and calculating the position of the detected particle in the global coordinate system. All the derived information and associated methods for each type of processing are stored within the processor object and can be subsequently accessed for further processing and/or outputs.
 
-\image html DATOR_physics.png
-\image latex DATOR_physics.png
+![image](./img/DATOR_physics.png)
 
 The processor objects must have three methods defined:
 
@@ -54,8 +53,7 @@ which will be called at the end of each file processed. This is useful to print 
 
 The time correlation, physics processing, and eventual output to either histograms or other event-by-event data formats (i.e. ROOT Trees) all takes place in a user-compile executable, i.e. the "sort code". A block diagram showing a typical case is shown below.
 
-\image html DATOR_sort.png
-\image latex DATOR_sort.png
+![image](./img/DATOR_sort.png)
 
 The best way to understand this in detail is to work through an example. Take a look at BasicSort.cc and follow the instructions there to compile and run the sort program on your own system. You can use it as a template to add your own output histograms, change the diagnostic reporting, and swap in and out processors for your own specific needs.
 
