@@ -96,6 +96,17 @@ I use ```$(HOME)/.local/``` as a personal preference, but you can choose anywher
 
 The ```CFLAGS``` variable defined in the Makefile contains a reference to ```root-config --cflags``` which will ensure DATOR is built with the same flags as your local ROOT installation. However, if you don't have or need ROOT, just remove this part from the definition and you should be fine. 
 
+# Documentation
+
+To build documentation locally, from the root repository directory execute
+
+~~~~~~~~~~~~~~{.sh}
+cd docs
+doxygen DATOR_doxy
+~~~~~~~~~~~~~~
+
+and then open the ```docs/html/index.html``` file on a web browser.
+
 # Contributors
 
 - Tim Gray (University of Tennesse, Knoxville/ORNL, tgray30@utk.edu)
