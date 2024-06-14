@@ -6,16 +6,22 @@
 ~~~~~~~~~~~~~~~{.cpp}
 class MyProcessor : public DATOR::Processor {
   public:
+  //these three are necessary for every Processor
   void Process(unsigned long long int timestamp, unsigned short int *data, unsigned short int length);
   void ProcessFinal();
   void Reset();
+
+  //this one is optional but useful
   void PrintSummary(std::ostream &out);
 
+  //these things are specific to each implementation of a Processor
+
+  //these are the "raw" data contained in a Type-19 event
   unsigned long long int time;
   std::vector<double> chans;
   std::vector<double> vals; 
 
-  //here go the derived data things
+  //these could be "derived" quantities from additional processing steps
   int threshold;
   void MakeSum();
   double totalSum;
@@ -28,9 +34,9 @@ I've also defined a member variable ```totalSum```, and a member function ```Mak
 #include "MyProcessor.hh"
 
 void MyProcessor::Process(unsigned long long int timestamp, unsigned short int *data, unsigned short int length) {
-  //here goes the code to take the data from the C-style vector *data (length bytes), and import it into the vectors chans and vals
-  //I'll leave you to fill this in, if you get stuck look through Reader.cc and the Orruba::Basic class.
+  //here goes the code to take the data from the C-style vector *data (length bytes), and import it into the vectors chans and vals.
   //The type-19 data is structured as a sequence of channel-value pairs, each as an unsigned short int. The last two are a "footer", and should always be the same: (0xFFFF,0xFFFF).
+  //I'll leave you to fill this in, if you get stuck look through Reader.cc and the Orruba::Basic class.
 }
 
 void MyProcessor::ProcessFinal() {
@@ -80,8 +86,8 @@ Which will spam the screen with numbers, but if they're all different and non-ze
 
 To get this to compile we'll need to make a small change to the Makefile as well:
 
-    BasicSort : BasicSort.cc libReader libGRETINA libORRUBA
-    	$(CC) $(CFLAGS) -I$(INSTALLDIR)/include/DATOR/ -o BasicDatorSort BasicSort.cc MyProcessor.cc $(ROOTLIBS) $(LIBS) -L$(INSTALLDIR)/lib -lReader -lGRETINA -lORRUBA
+    BasicSort : BasicSort.cc
+	    $(CC) $(CFLAGS) -I$(INSTALLDIR)/include/DATOR/ -o BasicDatorSort BasicSort.cc MyProcessor.cc $(ROOTLIBS) $(LIBS) -L$(INSTALLDIR)/lib/ -lReader -lGRETINA -lORRUBA
 
 simply adding the implementation file MyProcessor.cc to the source files passed to the compiler. You should be able to make and run BasicSort as usual.
 

@@ -7,5 +7,5 @@ ROOTLIBS = `root-config --libs --glibs` -Wl,--no-as-needed -lMathMore
 
 all : BasicSort
 
-BasicSort : BasicSort.cc libReader libGRETINA libORRUBA
-	$(CC) $(CFLAGS) -I$(INSTALLDIR)/include/DATOR/ -o BasicDatorSort BasicSort.cc $(ROOTLIBS) $(LIBS) -L$(LIBDIR) -lReader -lGRETINA -lORRUBA
+BasicSort : BasicSort.cc
+	$(CC) $(CFLAGS) -I$(INSTALLDIR)/include/DATOR/ -o BasicDatorSort BasicSort.cc $(ROOTLIBS) $(LIBS) -L$(INSTALLDIR)/lib/ -lReader -lGRETINA -lORRUBA

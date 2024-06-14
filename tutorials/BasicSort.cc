@@ -7,7 +7,7 @@
 
   Use this as a starting point for your own sort code.
 
-To compile, copy this file and the Makefile in this directory to a "working directory" associated with your experimental analysis. 
+To compile, copy this file and the Makefile in this directory to a "working directory" associated with your experimental analysis. You'll also want to copy the ```confs``` folder into that same working directory: it contains various configuration files and maps to run BasicSort.
 
 
 ## Understanding the Makefile
@@ -32,8 +32,8 @@ These are libraries to include. ```-lz``` refers to zlib, a compression library 
 
 These are ROOT libraries to include, again, fetched using the ```root-config``` program.
     
-    BasicSort : BasicSort.cc libReader libGRETINA libORRUBA
-    	$(CC) $(CFLAGS) -I$(INSTALLDIR)/include/DATOR/ -o BasicDatorSort BasicSort.cc $(ROOTLIBS) $(LIBS) -L$(INSTALLDIR)/lib -lReader -lGRETINA -lORRUBA
+    BasicSort : BasicSort.cc
+	    $(CC) $(CFLAGS) -I$(INSTALLDIR)/include/DATOR/ -o BasicDatorSort BasicSort.cc $(ROOTLIBS) $(LIBS) -L$(INSTALLDIR)/lib/ -lReader -lGRETINA -lORRUBA
 
 This is the actual make command which puts them all together. The 
 
@@ -229,7 +229,7 @@ int main(int argc, const char **argv) {
 
   //configurations, map files, geometry, options etc.
   Gret::Configuration gretconf("GretinaConf", "GRETINA Configuration");
-  gretconf.ReadCrystalMap("crmat.dat");
+  gretconf.ReadCrystalMap("confs/crmat.dat");
   gretconf.FX = Gret::FirstX::kHybrid;
   gretconf.Addback = true;
   //gretconf.warnings = true;
@@ -251,12 +251,12 @@ int main(int argc, const char **argv) {
   //////////////////////
 
   //configurations, map files, geometry, options, etc.
-  Orruba::Configuration orrconf("ORRUBAConf", "ORRUBA Configuration", "orruba.conf"); //this contains basic per-channel calibration
-  orrconf.ReadCalibration("orruba.cal"); //this contains more complex calibrations for cross-talk effects
+  Orruba::Configuration orrconf("ORRUBAConf", "ORRUBA Configuration", "confs/orruba.conf"); //this contains basic per-channel calibration
+  orrconf.ReadCalibration("confs/orruba.cal"); //this contains more complex calibrations for cross-talk effects
   orrconf.dEdist = -85.8;
   orrconf.Edist = -89.8;
-  orrconf.ReadRadii("qqq5_radii.dat"); //radii of rings in barrel detectors
-  orrconf.ReadPositionCalibration("sx3pos.cal"); //left and right edges of each SX3 in (r-l)/(r+l)
+  orrconf.ReadRadii("confs/qqq5_radii.dat"); //radii of rings in barrel detectors
+  orrconf.ReadPositionCalibration("confs/sx3pos.cal"); //left and right edges of each SX3 in (r-l)/(r+l)
 
   Orruba::Event orr;
   orr.SetConf(orrconf);  

@@ -13,6 +13,8 @@ Updates:
 06/2024 - Support for compressed files using zlib
 */
 
+#define _POSIX_C_SOURCE 1 //this is for the fileno() function
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>

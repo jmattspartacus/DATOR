@@ -3,7 +3,7 @@ DATOR: Data Analysis Toolkit for ORRUBA {#mainpage}
 
 This is a toolkit of software designed to assist with data analysis for ORRUBA experiments. Specifically, it aims to handle cases where ORRUBA is coupled to additional detector systems such as Gretina, the S800, or others.
 
-In practice, what this means is the toolkit can handle data from *any* combination of sources (not necessarily including ORRUBA), as long as that data is packaged in the well-established "Global Event Builder", or GEB format. However, since the toolkit has been developed by the ORRUBA collaboration with a view to ORRUBA analysis as a first use-case, the name remains.
+In practice, what this means is the toolkit can handle data from *any* combination of sources (not necessarily including ORRUBA), as long as that data is packaged in the well-established "Global Event Builder", or [GEB format](https://gretina.lbl.gov/tools-etc/gebheaders). However, since the toolkit has been developed by the ORRUBA collaboration with a view to ORRUBA analysis as a first use-case, the name remains.
 
 # Introduction to DATOR
 
@@ -15,7 +15,7 @@ The data pipeline for DATOR is shown below.
 
 ### Creating the merged Global.dat
 
-The raw data comes in the form of several files, typically a Global.dat or HFC.dat from one or more auxiliary systems, and a *.ldf file from the ORRUBA/Orphas data acquisition. A standalone executable, LDFMerge is included in DATOR, which merges the Global.dat with a single *.ldf file. This assumes that both files are already well time-ordered, and goes through event-by-event, removing any Type-19 (ORRUBA) events from the Global.dat, and replacing them with new Type-19 events constructed from the *.ldf data.
+The raw data comes in the form of several files, typically a Global.dat or HFC.dat from one or more auxiliary systems, and an *.ldf file from the ORRUBA/Orphas data acquisition. A standalone executable, LDFMerge is included in DATOR, which merges the Global.dat with a single *.ldf file. This assumes that both files are already well time-ordered, and goes through event-by-event, removing any Type-19 (ORRUBA) events from the Global.dat, and replacing them with new Type-19 events constructed from the *.ldf data.
 
 If additional files or formats are used in the future (i.e. some auxiliary system which uses neither the Orphas LDF nor is merged into the Global.dat), additional programs will be needed to complete the merge of these data streams.
 
@@ -33,25 +33,33 @@ The real magic of analysis happens in the "physics processing" stage. Here each 
 
 The processor objects must have three methods defined:
 
-``` Processor::Process(unsigned long long int timestamp, unsigned short int *data, unsigned short int length); ```
+~~~~~~~~~{.cpp}
+Processor::Process(unsigned long long int timestamp, unsigned short int *data, unsigned short int length);
+~~~~~~~~~
 
 This takes the payload of the GEB event (pointed to by *data), and does the processsing.
 
-```Processor::ProcessFinal();```
+~~~~~~~~~{.cpp}
+Processor::ProcessFinal();
+~~~~~~~~~
 
-This is any additional processing to take place at the end of the physics event, after all subevents have been read and processed. For example, add-back for Gretina.
+This is any additional processing to take place at the end of the physics event, after all subevents have been read and processed. For example, addback for Gretina.
 
-```Processor::Reset();```
+~~~~~~~~~{.cpp}
+Processor::Reset();
+~~~~~~~~~
 
 This is called at the beginning of each physics event: i.e. delete or reset any data from the previous event. Optionally, a fourth member can be defined
 
-```Processor::PrintSummary(std::ostream &out);```
+~~~~~~~~~{.cpp}
+Processor::PrintSummary(std::ostream &out);
+~~~~~~~~~
 
 which will be called at the end of each file processed. This is useful to print a summary of statistics and diagnostics to ```std::cout``` or a log file.
 
 ### The sort program
 
-The time correlation, physics processing, and eventual output to either histograms or other event-by-event data formats (i.e. ROOT Trees) all takes place in a user-compile executable, i.e. the "sort code". A block diagram showing a typical case is shown below.
+The time correlation, physics processing, and eventual output to either histograms or other event-by-event data formats (i.e. ROOT Trees) all takes place in a user-compiled executable, i.e. the "sort code". A block diagram showing a typical case is shown below.
 
 ![image](./docs/img/DATOR_sort.png)
 

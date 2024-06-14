@@ -9,6 +9,15 @@
 namespace DATOR {
   double Reader::Dither;
 
+  /*! Loads files into the reader object
+    \param fn File to load paths from. This can be either a *.txt file containing two (whitespace-separated) columns: run number and path
+    ~~~~~~~~~~~~
+    1    /path/to/run1/Global.dat
+    2    /path/to/run2/Global.dat
+    5    /path/to/run5/Global.dat
+    ~~~~~~~~~~~~
+    or a single *.dat (uncompressed) or *.dat.gz (compressed) data file
+   */
   int Reader::LoadPaths(std::string fn) {
     if (!fn.substr(fn.size()-7).compare(".dat.gz")) {
       fCompressed = true;
@@ -60,17 +69,24 @@ namespace DATOR {
     }
   }    
 
+  /*! Switches to next file in the list of loaded files. Closes the old file and opens a new one, resetting and incrementing various counters and diagnostics. Also reads the first header of the new file in preparation for a Reader::Next() loop. 
+
+    \return Error code. <br>
+    0 - New file couldn't be opened or opened file is empty. <br>
+    1 - No error, file opened and first header read successfully.
+    
+   */
   int Reader::NextFile() {
     fileIndx += 1;
     if (fCompressed) {
-      if (fileIndx >= runPaths.size()) {
+      if (fileIndx >= (int)runPaths.size()) {
         if (DataFile != 0) { gzclose(gDataFile); }
         if (PrunedFile != 0) { gzclose(gPrunedFile); }
         return 0;
       }
     }
     else {
-      if (fileIndx >= runPaths.size()) {
+      if (fileIndx >= (int)runPaths.size()) {
         if (DataFile != 0) { fclose(DataFile); }
         if (PrunedFile != 0) { fclose(PrunedFile); }
         return 0;
@@ -137,6 +153,10 @@ namespace DATOR {
     return 1;
   }
 
+  /*! Prints sort progress
+
+    \param out Stream to print to
+  */
   void Reader::PrintUpdate(std::ostream &out) {
     
     double perc_complete;
@@ -147,13 +167,16 @@ namespace DATOR {
       perc_complete = 100.0*(float)((float)ftell(DataFile))/fileSize;
     }
     auto time_now = std::chrono::system_clock::now();
+    double evt_diff = nEvents - nEventsLast;
     double diff = double(std::chrono::duration_cast <std::chrono::microseconds> (time_now - time_last).count());
     std::cout << "\r" << ANSI_COLOR_GREEN << nEvents << ANSI_COLOR_RESET << " events sorted, " << std::fixed << std::setprecision(1) << ANSI_COLOR_GREEN << perc_complete << "%" << ANSI_COLOR_RESET ;
     out.unsetf(std::ios_base::floatfield);
-    out << std::setprecision(6) << " [" << ANSI_COLOR_YELLOW << 7137/diff*1000000 << ANSI_COLOR_RESET << " evts/s]" << std::flush;
+    out << std::setprecision(6) << " [" << ANSI_COLOR_YELLOW << evt_diff/diff*1000000 << ANSI_COLOR_RESET << " evts/s]" << std::flush;
     time_last = time_now;
+    nEventsLast = nEvents;
   }
 
+  /*! Resets counters, usually in preparation for a new file */
   void Reader::Reset() {
     nOutOfOrder = 0;
     nEvents = 0;
@@ -163,32 +186,47 @@ namespace DATOR {
     old_timestamp = -1;
   }
 
+  /*! Gets current run number 
+    \return run number
+   */
   int Reader::GetRunNo() { return runNos[fileIndx]; }
+  /*! Gets current data file path
+    \return path
+   */
   std::string Reader::GetPath() { return runPaths[fileIndx]; }    
-  
+
+  /*! Gets current Dither value and increments the dither.
+    \return dither
+   */
   double Reader::GetDither() { 
     Reader::Dither += 0.02;
     if (Reader::Dither >= 0.9999) { Reader::Dither = 0.0; } 
     return Reader::Dither;
   }
 
-  int Reader::Init() {
-    eventmult = 0;
-    return 1;
-  }
-
+  /*! Starts the clock for sorting */
   void Reader::Start() {
     start_time = std::chrono::system_clock::now();
   }
 
+  /*! Stops the clock for sorting */
   void Reader::Stop() {
     stop_time = std::chrono::system_clock::now();
   }
 
+  /*! Adds a processor
+    \param type GEB type to associate the processor with
+    \param proc Pointer to the processor object
+   */
   void Reader::AddProcessor(int type, Processor *proc) {
     processors[type].push_back(proc);
   }
-  
+
+  /*! Main event loop function. Builds a physics event from succesive sub-events until the sequential time difference is greater than coinc_window.
+    \return Error code. <br>
+    0 - End of file reached, no new data in the event. <br>
+    1 - No error, event built successfully.
+  */
   int Reader::Next() {
     if (eof) { return 0; }
     if (nEvents > 0) {
@@ -200,7 +238,7 @@ namespace DATOR {
     old_timestamp = -1;
 
     for (int geb=0; geb<MAX_GEB_TYPE; ++geb) {
-      for (int i=0; i<processors[geb].size(); ++i) {        
+      for (size_t i=0; i<processors[geb].size(); ++i) {        
         processors[geb][i]->Reset();
       }
     }
@@ -210,6 +248,7 @@ namespace DATOR {
     while (1) { //subevent loop
       if (nEvents == 1 && subevt == 0) {
         starttime = headers[subevt].timestamp * 10.0/(1e9*60.0);
+        if (ts_mode == 1) { run_wt_offset = starttime; }
       }
       walltime = headers[subevt].timestamp * 10.0/(1e9*60.0);
         
@@ -233,7 +272,7 @@ namespace DATOR {
         printf("timestamp = %ld\n", headers[subevt].timestamp);
       }
       
-      HeaderType htype(static_cast<HeaderType>(headers[subevt].type));
+      //HeaderType htype(static_cast<HeaderType>(headers[subevt].type));
 
       //read the payload
       if (headers[subevt].length > MAX_GEB_PAYLOAD) { std::cerr << "Severe error! GEB payload size " << headers[subevt].length << " > " << MAX_GEB_PAYLOAD << ". Increase MAX_GEB_PAYLOAD" << std::endl; exit(1); };
@@ -251,7 +290,7 @@ namespace DATOR {
 
       nGEBTypes[headers[subevt].type]++;
       //process the payload
-      for (int i=0; i<processors[headers[subevt].type].size(); ++i) {
+      for (size_t i=0; i<processors[headers[subevt].type].size(); ++i) {
         if (processors[headers[subevt].type][i] != NULL) {
           processors[headers[subevt].type][i]->Process(headers[subevt].timestamp, (unsigned short int*)(&sub[subevt][0]), headers[subevt].length);
         }
@@ -280,7 +319,7 @@ namespace DATOR {
     if (subevt == 0) { eof = true; return 0; }  //no subevents, end of file
 
     for (int geb=0; geb<MAX_GEB_TYPE; ++geb) {
-      for (int i=0; i<processors[geb].size(); ++i) {        
+      for (size_t i=0; i<processors[geb].size(); ++i) {        
         processors[geb][i]->ProcessFinal(); //end-of-event processing
       }
     }
@@ -288,6 +327,9 @@ namespace DATOR {
     return retval;
   }
 
+  /*! Write to pruned output file
+    \return Number of bytes written
+  */
   int Reader::Write() {
     if (!PrunedOutput) { return -1; }
     int retval = 0;
@@ -305,6 +347,8 @@ namespace DATOR {
     return retval;
   }
 
+  /*! Print summary of sorting, usually at the end of each file. This function calls Processor::PrintSummary for each processor loaded.
+   */
   int Reader::PrintSummary(std::ostream &out) {
     double duration = (double)(std::chrono::duration_cast <std::chrono::microseconds> (stop_time - start_time).count());
     
@@ -321,7 +365,7 @@ namespace DATOR {
     out << std::setprecision(6);
 
     for (int geb=0; geb<MAX_GEB_TYPE; ++geb) {
-      for (int i=0; i<processors[geb].size(); ++i) {
+      for (size_t i=0; i<processors[geb].size(); ++i) {
         processors[geb][i]->PrintSummary(out);
       }
     }
