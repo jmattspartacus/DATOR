@@ -56,10 +56,10 @@ namespace Gret {
         std::cerr << "Warning! crystal t0 is NaN: " << data->t0 << std::endl;
       }
       Fix = true;
-      Time = data->timestamp + (long long int)(Event::conf.MeanT0/10.0);      
+      Time = data->timestamp + Event::conf.MeanT0;      
     }
     else {
-      Time = data->timestamp + (long long int)(data->t0/10.0);
+      Time = data->timestamp + data->t0;
     }
 
     double minz = 1e6;
@@ -83,7 +83,7 @@ namespace Gret {
         double int_z = data->intpts[i].z;
         double int_e = data->intpts[i].e;
 
-        //std::cout << data->intpts[i].seg << "   " << data->intpts[i].seg_ener << "   " << data->intpts[i].e  << "   " << int_x << "   " << int_y << "   " << int_z << std::endl;
+        //std::cout << i << "   " << data->intpts[i].seg << "   " << data->intpts[i].seg_ener << "   " << data->intpts[i].e  << "   " << int_x << "   " << int_y << "   " << int_z << std::endl;
 
         if (Fix) {
           int_x = 0;
