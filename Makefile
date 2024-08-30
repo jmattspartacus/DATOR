@@ -1,11 +1,11 @@
 LIBDIR=$(shell pwd)/lib/
 INSTALLDIR=$(HOME)/.local
 
-CC = g++
+CC = $(HOME)/gcc/installexec/gcc/bin/g++
 CFLAGS = `root-config --cflags` -O3 -g -fPIC
 LIBS = -Wl,--no-as-needed -lz
 ROOTLIBS = `root-config --libs --glibs` -Wl,--no-as-needed -lMathMore
-C = gcc
+C = $(HOME)/gcc/installexec/gcc/bin/gcc
 
 export CC
 export CFLAGS

@@ -39,8 +39,10 @@ namespace Gret {
 
     double Theta;
     double Phi;
+
+    double MaxIntEn;
     
-    double Time;
+    long long int Time;
 
     double Efficiency;
 

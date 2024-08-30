@@ -15,7 +15,7 @@ namespace Gret {
     double Theta;
     double Phi;
 
-    double Time;
+    long long int Time;
 
     float Efficiency;
 
@@ -24,9 +24,9 @@ namespace Gret {
     Gamma() {};
     Gamma(double en, int nh, int *inds) :
       Energy(en), FirstInt(0), Theta(0), Phi(0), ID(0), Time(0), nHits(nh) { for (int i=0; i<nh; ++i) {hitInds[i] = inds[i];} }
-    Gamma(double en, int nh, int *inds, int fi, double t, double p, int id, double time, bool fx, float eff) :
+    Gamma(double en, int nh, int *inds, int fi, double t, double p, int id, long long int time, bool fx, float eff) :
       Energy(en), FirstInt(fi), Theta(t), Phi(p), ID(id), Time(time), Fix(fx), Efficiency(eff), nHits(nh) {for (int i=0; i<nh; ++i) {hitInds[i] = inds[i];} }
-    void Set(double en, int nh, int *inds, int fi, double t, double p, int id, double time, bool fx, float eff) {
+    void Set(double en, int nh, int *inds, int fi, double t, double p, int id, long long int time, bool fx, float eff) {
       Energy = en;
       FirstInt = fi;
       Theta = t;

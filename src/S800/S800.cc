@@ -34,6 +34,7 @@ namespace S800 {
     xfp=0;
     obj_corr=0;
     xfp_corr=0;
+    valid = false;
   }  
 
   void Event::Process(unsigned long long int timestamp, unsigned short int *data, unsigned short int length) {

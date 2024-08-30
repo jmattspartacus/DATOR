@@ -56,15 +56,15 @@ namespace Gret {
         std::cerr << "Warning! crystal t0 is NaN: " << data->t0 << std::endl;
       }
       Fix = true;
-      Time = data->timestamp + Event::conf.MeanT0/10.0;      
+      Time = data->timestamp + (long long int)(Event::conf.MeanT0/10.0);      
     }
     else {
-      Time = data->timestamp + data->t0/10.0;
+      Time = data->timestamp + (long long int)(data->t0/10.0);
     }
 
     double minz = 1e6;
     double sum_energy = 0;
-    double max_energy = 0;
+    MaxIntEn = 0;
     x = 0;
     y = 0;
     z = 0;
@@ -127,8 +127,8 @@ namespace Gret {
           z = 0;
           break;
         case FirstX::kMaxEnergy: 
-          if (int_e > max_energy) {
-            max_energy = int_e;
+          if (int_e > MaxIntEn) {
+            MaxIntEn = int_e;
             x = int_x;
             y = int_y;
             z = int_z;            
@@ -137,8 +137,8 @@ namespace Gret {
           break;
         case FirstX::kHybrid: 
           if (data->tot_e > 515) { //arbitrary, should this be a parameter?
-            if (int_e > max_energy) {
-              max_energy = int_e;
+            if (int_e > MaxIntEn) {
+              MaxIntEn = int_e;
               x = int_x;
               y = int_y;
               z = int_z;            
