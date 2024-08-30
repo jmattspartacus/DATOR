@@ -71,6 +71,32 @@ namespace S800 {
   static const int max_xtl = max_det*max_det_xtl;
   static const int nppacs = 20;
 
+  struct s800_physicsdata {  
+    int32_t type; /* defined as abcd1234 for indicating this (first) version */  
+    float crdc1_x; /* crdc x/y positions, in mm */  
+    float crdc1_y;  
+    float crdc2_x;  
+    float crdc2_y;  
+    float ic_sum; /* ion chamber energy loss */  
+    float tof_xfp; /* tof scintillator after the A1900 */  
+    float tof_obj; /* tof scintillator in the object box */  
+    float rf; /* cyclotron rf for tof */  
+    int trigger; /* trigger register bit pattern */  
+    /*------------------------------------------------------------------------*/  
+    /* from here corrected values, extracted from data above */  
+    /*------------------------------------------------------------------------*/  
+    float ic_de;   /* tof values with corrections applied (from afp/crdc x) */  
+    float tof_xfpe1;  
+    float tof_obje1;  
+    float tof_rfe1;  /* Trajectory information at target position calculated from 
+                        a map and  afp/bfp/xfp/ycp.  New map and you need to 
+                        recalculate. */  
+    float ata; /* dispersive angle */  
+    float bta; /* non-dispersive angle */  
+    float dta; /* dT/T, T = kinetic energy */  
+    float yta; /* non-dispersive direction */ 
+  };
+  
   struct crys_intpts {
     int type; /* as of June 2012: abcd5678 */
     int crystal_id;
