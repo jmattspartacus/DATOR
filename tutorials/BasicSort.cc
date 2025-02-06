@@ -188,6 +188,7 @@ This could also be written to a log file instead of ```std::cout```. After the f
 
 #include "GRETINA/Gretina.hh"
 #include "ORRUBA/ORRUBA.hh"
+#include "ORRUBA/ORRUBAAuxiliary.hh"
 
 #include "Reader/Reader.hh"
 #include "Reader/RawData.hh"
@@ -270,6 +271,12 @@ int main(int argc, const char **argv) {
   //this does nothing but load the (channel,value) pairs into vectors
   Orruba::Basic orrb;
   reader.AddProcessor(19, &orrb);
+
+  ////////////////////////////////
+  // ORRUBA AUXILIARY PROCESSOR //
+  ////////////////////////////////
+  Orruba::Auxiliary orraux;
+  reader.AddProcessor(22, &orraux);
   
   std::cout << "Writing output histograms to " << ANSI_COLOR_YELLOW << argv[2] << ANSI_COLOR_RESET << std::endl;
   TFile *file = new TFile(argv[2], "RECREATE");
@@ -329,6 +336,8 @@ int main(int argc, const char **argv) {
       if (evtCtr % 7137 == 0) {
         reader.PrintUpdate(std::cout);
       }
+
+      orraux.Print();
 
       //GRETINA things
       for (int i=0; i<gret.nhits; ++i) {
