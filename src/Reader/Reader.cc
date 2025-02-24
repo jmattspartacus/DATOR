@@ -380,5 +380,14 @@ namespace DATOR {
 
 
     return 0;
-  }  
+  }
+
+
+  void BasicProcessor::Reset() { fired = false; } ;
+  void BasicProcessor::Process(unsigned long long int timestamp, unsigned short int *data, unsigned short int length){
+    time = timestamp;
+    fired = true;
+  }
+  void BasicProcessor::ProcessFinal() { };
+  void BasicProcessor::PrintSummary(std::ostream &out) {};
 }

@@ -272,6 +272,18 @@ namespace DATOR {
     int Write();
     int PrintSummary(std::ostream &out);
   };
+
+  class BasicProcessor : public DATOR::Processor {
+  public:
+    void Reset();
+    void Process(unsigned long long int timestamp, unsigned short int *data, unsigned short int length);
+
+    void ProcessFinal();
+    void PrintSummary(std::ostream &out);
+
+    unsigned long long int time;
+    int fired;
+  };
 }
 
 #endif

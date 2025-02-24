@@ -180,7 +180,7 @@ int main(int argc, const char **argv) {
   }
 
   struct cFile gebfile;
-  struct cFile outfile;
+   struct cFile outfile;
  
   FILE *ldffile = fopen(argv[1], "r");
   if (!compressed) { outfile.ptr = fopen("GlobalConverted.dat", "w"); }
