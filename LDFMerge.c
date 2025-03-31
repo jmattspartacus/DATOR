@@ -202,7 +202,7 @@ void WriteGEB(struct cFile *outfile, struct cFile *file, struct GEBHeader *heade
 
 int main(int argc, const char **argv) {
   if (argc < 2) {
-    printf("Useage: LDFMerge Global.dat[.gz] ORRUBA.ldf\n");
+    printf("Useage: LDFMerge Global.dat[.gz] ORRUBA.ldf [OutputFile.dat[.gz]]\n");
     exit(1);
   }
 
