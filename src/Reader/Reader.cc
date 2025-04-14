@@ -45,13 +45,20 @@ namespace DATOR {
     else if (!fn.substr(fn.size()-4).compare(".txt")) {
       std::ifstream infile(fn);
       if (!infile.is_open()) { std::cerr << fn << " not found!" << std::endl; return -1; }
-
+      
+      std::string tline;
       int indx;
       std::string path;
 
       runPaths.clear();
       runNos.clear();
-      while (infile >> indx >> path) {
+      while (std::getline(infile, tline)) {
+        if(tline[0] == "#"[0]){
+          continue;
+        }
+        std::stringstream st(tline);
+        st >> indx >> path;
+
         runPaths.push_back(path);
         runNos.push_back(indx);
         if (!path.substr(path.size()-7).compare(".dat.gz")) {
