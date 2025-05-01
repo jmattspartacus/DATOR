@@ -7,7 +7,7 @@ docs/latex/*
 *.dylib
 *.o
 bk.*
-
+build/*
 *~
 \#*\#
 .\#*

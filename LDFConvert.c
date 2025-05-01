@@ -175,16 +175,31 @@ void WriteGEB(struct cFile *outfile, struct cFile *file, struct GEBHeader *heade
 
 int main(int argc, const char **argv) {
   if (argc < 2) {
-    printf("Useage: LDFConvert ORRUBA.ldf\n");
+    printf("Useage: LDFConvert ORRUBA.ldf [output.dat[.gz]]\n");
     exit(1);
   }
 
   struct cFile gebfile;
-   struct cFile outfile;
- 
+  struct cFile outfile;
+  
+  char *compressed_ext = ".dat.gz";
+  char *raw_ext = ".dat";
   FILE *ldffile = fopen(argv[1], "r");
-  if (!compressed) { outfile.ptr = fopen("GlobalConverted.dat", "w"); }
-  else { outfile.ptr = fopen("GlobalConverted.dat.gz", "w"); outfile.gzf = gzdopen(fileno(outfile.ptr), "w"); }
+  bool compressed_out = false;
+  const char * outf;
+  if(argc > 2){
+    outf = argv[2];
+    compressed_out = !strcmp(&outf[strlen(outf)-7], compressed_ext);
+  } else {
+    if(compressed){
+      outf = "GlobalMerge.dat.gz";
+      compressed_out = true;
+    } else {
+      outf = "GlobalMerge.dat";
+    }
+  }
+  if (!compressed_out) { outfile.ptr = fopen(outf, "w"); }
+  else { outfile.ptr = fopen(outf, "w"); outfile.gzf = gzdopen(fileno(outfile.ptr), "w"); }
 
   int readLDF = 1;
   struct ldfdata dataLDF;
