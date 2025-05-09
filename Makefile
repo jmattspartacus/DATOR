@@ -39,6 +39,10 @@ LDFConvert : prepdirs LDFConvert.c
 	$(C) -std=c99 -O3 -g -o $(BINDIR)/LDFConvert LDFConvert.c -lz
 
 install : libReader libGRETINA libORRUBA libS800
+	cp src/Reader/*.hh $(INSTALLDIR)/include/DATOR/Reader
+	cp src/GRETINA/*.hh $(INSTALLDIR)/include/DATOR/GRETINA
+	cp src/S800/*.hh $(INSTALLDIR)/include/DATOR/S800
+	cp src/ORRUBA/*.hh $(INSTALLDIR)/include/DATOR/ORRUBA
 	mkdir -p $(INSTALLDIR)/lib
 	mkdir -p $(INSTALLDIR)/bin
 	cp $(BINDIR)* $(INSTALLDIR)/bin/

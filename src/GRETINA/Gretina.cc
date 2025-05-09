@@ -13,11 +13,13 @@ namespace Gret {
   Configuration Event::conf;
 
   void Event::Process(unsigned long long int timestamp, unsigned short int *data, unsigned short int length) {
+    /*
     crys_intpts crystal;
     if (sizeof(crystal) != length) {
       printf("Severe Error: Inconsistent Gretina Payload length\n");
       return;
     }
+    */
 
     crys_intpts *crys = (crys_intpts*)data;
     AddHit(timestamp, crys);

@@ -3,6 +3,7 @@
 
 namespace Orruba {
   enum class DetType {
+    NoType,
     QQQ5,
     SX3,
     BB10,
@@ -11,7 +12,7 @@ namespace Orruba {
 
 class SingleParticle  {
   public:
-    DetType detType; //0=QQQ5, 1=SX3, 2=BB10
+    DetType detType; //1=QQQ5, 2=SX3, 3=BB10
     unsigned int detID;
     unsigned int frontID; //strip/ring
     unsigned int backID; //pad/sector
