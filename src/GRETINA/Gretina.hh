@@ -20,6 +20,7 @@ namespace Gret {
     int ngammas;
     std::vector<GretinaHit> hits;
     std::vector<Gamma> gammas;
+    double gammaSum; 
     //GretinaHit hits[GRETS800_GRETINA_MAXHITS];
     //Gamma gammas[GRETS800_GRETINA_MAXHITS];
     static Configuration conf;
@@ -39,7 +40,7 @@ namespace Gret {
     int BuildGammas();
 
     void ResetCounters() { nGretina = 0; nValidGretina = 0; nTotalGammas = 0; nEvents = 0; }
-    void Reset() { nhits = 0; ngammas = 0; hits.clear(); gammas.clear(); }
+    void Reset() { nhits = 0; ngammas = 0; hits.clear(); gammas.clear(); gammaSum = 0;}
     void Process(unsigned long long timestamp, unsigned short int *data, unsigned short int length);
     void ProcessFinal() { nEvents += 1; BuildGammas(); }
     void PrintSummary(std::ostream &out);

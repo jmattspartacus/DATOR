@@ -39,6 +39,7 @@ namespace Gret {
     if (hits[nhits].Build(GEBtimestamp, data) >= 0) {
       if (hits[nhits].valid) {
         nValidGretina += 1;
+        gammaSum += hits[nhits].TotalEnergy;
       }
       nhits += 1;
       return 0;
