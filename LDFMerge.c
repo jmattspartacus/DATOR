@@ -91,9 +91,9 @@ int ReadLDF(FILE *fptr, struct ldfdata *data, int *startWord, int *stopWord) {
 
 int GetLDFTime(struct ldfdata *data, int *startWord, int *stopWord, unsigned long long int *ldf_time) {
   *ldf_time = 0;
-  unsigned short int lsb;
-  unsigned short int msb;
-  unsigned short int hsb;
+  unsigned short int lsb = 0;
+  unsigned short int msb = 0;
+  unsigned short int hsb = 0;
   for ( int word = *startWord; word <= *stopWord; ++word) {
     unsigned short int channel = (data->data[word] & 0x7FFF);
     unsigned short int value = (data->data[word] >> 16 );
@@ -115,6 +115,7 @@ int GetLDFTime(struct ldfdata *data, int *startWord, int *stopWord, unsigned lon
   }
 
   if (lsb == msb && msb == hsb) {
+    //printf("%i %i %i \n", hsb, msb, lsb);
     return 0;
   }
   else {
@@ -250,6 +251,7 @@ int main(int argc, const char **argv) {
   int stopWord = 0;
   struct GEBHeader header;
   unsigned long long int time_LDF = 0;
+  unsigned long long int last_time_LDF = 0;
   unsigned long long int time_GEB = 0;
 
   unsigned long long int readCtrLDF = 0;
@@ -259,6 +261,8 @@ int main(int argc, const char **argv) {
   unsigned long long discards = 0;
 
   unsigned long long int type19 = 0;
+  unsigned long long int type19_badmyriad_a = 0;
+  unsigned long long int type19_badmyriad_b = 0;
   unsigned long long int type22 = 0;
   
   while (true) {
@@ -296,18 +300,37 @@ int main(int argc, const char **argv) {
           if (typeID == SCALER) { time_LDF = time_LDF < time_GEB ? time_LDF : time_GEB; }
           else {
             retval = GetLDFTime(&dataLDF, &startWord, &stopWord, &time_LDF);
+            long long int delta = (long long int)time_LDF - (long long int)last_time_LDF;
+            bool immediate_write = false;
             if (retval == 0) {
-              printf("\nSpurious MyRIAD, writing immediately\n");
+              //printf("\nBad MyRIAD (a), writing immediately\n");
+              type19_badmyriad_a += 1;
+              immediate_write = true;
+            }
+            else if (delta < 0) {
+              printf("\nWarning! LDF file appears to be improperly time ordered!\n");
+              immediate_write = true;
+            }
+            else if (delta > 1e9 && type19>0) {
+              //printf("\nBad MyRIAD (b), writing immediately\n");
+              type19_badmyriad_b += 1;
+              immediate_write = true;
+            }
+
+            if (immediate_write) {
               if (typeID == DATA) {
                 type19 += 1;
               }
-              else if (typeID == SCALER) {
+               if (typeID == SCALER) {
                 type22 += 1;
               }                      
               WriteLDF(&outfile, &dataLDF, &startWord, &stopWord, time_LDF);
               readLDF = 1;
               startWord = stopWord + 1;
               ctrLDF += 1;
+            }
+            else {
+              last_time_LDF = time_LDF;
             }
           
             //printf("%i  %llu\n", retval, time_LDF);
@@ -354,6 +377,8 @@ int main(int argc, const char **argv) {
   fclose(outfile.ptr);
   printf("\nLDF events: %llu read, %llu written\n", readCtrLDF, ctrLDF);
   printf("            %llu type-19, %llu type-22\n", type19, type22);  
+  printf("  Bad MyRIAD: %llu (a), %llu (b)\n", type19_badmyriad_a, type19_badmyriad_b);  
+
   printf("GEB events: %llu read, %llu written, %llu type-19 discarded\n", readCtrGEB, ctrGEB, discards);
   printf("Done\n");
   
