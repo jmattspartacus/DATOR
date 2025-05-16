@@ -3,10 +3,12 @@
 
 namespace Orruba {
   enum class DetType {
+    NoType,
     QQQ5,
     SX3,
     BB10,
-    Track
+    Track,
+    TDC
   };
 
 class SingleParticle  {

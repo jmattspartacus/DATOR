@@ -11,6 +11,7 @@
 #include "ORRUBA/SX3.hh"
 #include "ORRUBA/QQQ5.hh"
 #include "ORRUBA/BB10.hh"
+#include "ORRUBA/TDC.hh"
 
 namespace Orruba { 
 
@@ -110,11 +111,13 @@ namespace Orruba {
     Configuration();
     Configuration(std::string filename);
     Configuration(std::string name, std::string title, std::string filename);
+    void Set(std::string name, std::string title, std::string filename);
     void ReadConfiguration(std::string filename);
     void ReadCalibration(std::string filename);
     void ReadPositionCalibration(std::string filename);
     void ReadRadii(std::string filename);
     void SetThresholds(float thresh);
+    void SetThresholds(int chan, float thresh);
     void SetThresholds(DetType type, float thresh);
     void SetThresholds(DetType type, int s, float thresh);
 
@@ -199,6 +202,7 @@ namespace Orruba {
     std::vector<QQQ5> qqq5s;
     std::vector<BB10> bb10s;
     Tracker tracker; //! prevent this from being written to TTree
+    TDC tdc;
 
     //don't like that this is a vector of pointers... means we'll be dynamically allocating each event which is expensive
     std::vector<SingleParticle*> single_parts; //these come from a single SX3 or QQQ5, with front/back together
@@ -269,7 +273,7 @@ namespace Orruba {
     int AddQQQ5(unsigned short int channel, unsigned short int value);
     int AddSX3(unsigned short int channel, unsigned short int value);
     int AddBB10(unsigned short int channel, unsigned short int value);
-    void Reset() { sx3s.clear(); qqq5s.clear(); bb10s.clear(); tracker.Reset();
+    void Reset() { sx3s.clear(); qqq5s.clear(); bb10s.clear(); tracker.Reset(); tdc.Reset();
       for (int i=0; i<single_parts.size(); ++i) {
         delete single_parts[i];
       }

@@ -1,4 +1,7 @@
-LIBDIR=$(shell pwd)/lib/
+BUILDDIR=$(shell pwd)/build
+LIBDIR=$(BUILDDIR)/lib/
+BINDIR=$(BUILDDIR)/bin/
+BUILDINCLUDEDIR=$(BUILDDIR)/include/DATOR
 INSTALLDIR=$(HOME)/.local
 
 CC = g++
@@ -15,7 +18,13 @@ export INSTALLDIR
 
 all: libReader libGRETINA libORRUBA libS800 LDFMerge LDFConvert
 
-libReader :
+prepdir :
+	mkdir -p $(BINDIR)
+	mkdir -p $(LIBDIR)
+	mkdir -p $(BUILDINCLUDEDIR)
+	cd src && find . -type f -name "*.hh" -exec cp --parents {} ../build/include/DATOR/ \;
+
+libReader : prepdir
 	cd src/Reader && $(MAKE)
 
 libGRETINA : libReader
@@ -27,22 +36,16 @@ libORRUBA : libReader
 libS800 : libReader
 	cd src/S800 && $(MAKE)
 
-LDFMerge : LDFMerge.c
-	$(C) -std=c99 -O3 -o LDFMerge LDFMerge.c -lz
+LDFMerge : prepdir LDFMerge.c
+	$(C) -std=c99 -O3 -o $(BINDIR)LDFMerge LDFMerge.c -lz
 
-LDFConvert : LDFConvert.c
-	$(C) -std=c99 -O3 -o LDFConvert LDFConvert.c -lz
+LDFConvert : prepdir LDFConvert.c
+	$(C) -std=c99 -O3 -o $(BINDIR)LDFConvert LDFConvert.c -lz
 
-install : libReader libGRETINA libORRUBA libS800
-	cd src/Reader && $(MAKE) install
-	cd src/GRETINA && $(MAKE) install
-	cd src/ORRUBA && $(MAKE) install
-	cd src/S800 && $(MAKE) install
-	mkdir -p $(INSTALLDIR)/lib
-	mkdir -p $(INSTALLDIR)/bin
-	cp LDFMerge $(INSTALLDIR)/bin
-	cp LDFConvert $(INSTALLDIR)/bin	
+all : libReader libGRETINA libORRUBA libS800 LDFMerge LDFConvert
+
+install : all
+	cp -r $(BUILDDIR)/* $(INSTALLDIR)
 
 clean:
-	rm lib/*.so
-	rm LDFMerge LDFConvert
+	rm -rf build

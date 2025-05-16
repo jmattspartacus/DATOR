@@ -67,6 +67,7 @@ namespace Orruba {
       else if (!type.compare("SX3")) { types[chan-1] = DetType::SX3; }
       else if (!type.compare("BB10")) { types[chan-1] = DetType::BB10; }
       else if (!type.compare("Track")) { types[chan-1] = DetType::Track; }
+      else if (!type.compare("TDC")) { types[chan-1] = DetType::TDC; }
       else { std::cout << "Warning! Unrecognized detector type for channel " << chan << std::endl; }
       detID[chan-1]=ID;
       layer[chan-1]=lyr;
@@ -200,13 +201,22 @@ namespace Orruba {
     //SetTitle(title.c_str());
   }
 
+  void Configuration::Set(std::string name, std::string title, std::string filename) {
+    ReadConfiguration(filename);
+  }
+
   void Configuration::SetThresholds(float thresh) {
     for (int i=0; i<threshold.size(); ++i) {
       threshold[i] = thresh;
     }
   }
 
-  void Configuration::SetThresholds(DetType type, float thresh) {
+  void Configuration::SetThresholds(int chan, float thresh) {
+    threshold[chan-1] = thresh;
+  }
+
+  void Configuration::SetThresholds(DetType type, float thresh)
+  {
     for (int i=0; i<threshold.size(); ++i) {
       if (types[i] == type) {
         threshold[i] = thresh;
@@ -229,29 +239,29 @@ namespace Orruba {
     bool sx3evt = false;
     bool qqq5evt = false;
     bool bb10evt = false;
+    int qqq5hitsth = 0;
     for (int i=0; i<nhits; ++i) {
       unsigned short int chan = chans[i];
       unsigned short int val = vals[i];
       if (conf.types[chan-1] == DetType::QQQ5) {
-	qqq5hits += 1;
-	int retval = AddQQQ5(chan, val);
-	if (retval) { nQQQ5HitsTh += 1; }
-	if (!qqq5evt && retval)  { qqq5evt = true; nQQQ5Evts += 1; }
-      }
-      else if (conf.types[chan-1] == DetType::SX3) {
-	sx3hits += 1;
-	int retval = AddSX3(chan, val);
-	if (retval) { nSX3HitsTh += 1; }
-	if (!sx3evt && retval) { sx3evt = true; nSX3Evts += 1; }
-      }
-      else if (conf.types[chan-1] == DetType::BB10) {
-	bb10hits += 1;
-	int retval = AddBB10(chan, val);
-	if (retval) { nBB10HitsTh += 1; }
-	if (!bb10evt && retval) { bb10evt = true; nBB10Evts += 1; }
-      }
-      else if (conf.types[chan-1] == DetType::Track) {
+        qqq5hits += 1;
+        int retval = AddQQQ5(chan, val);
+        if (retval) { nQQQ5HitsTh += 1; }
+        if (!qqq5evt && retval)  { qqq5evt = true; nQQQ5Evts += 1; }
+      } else if (conf.types[chan-1] == DetType::SX3) {
+        sx3hits += 1;
+        int retval = AddSX3(chan, val);
+        if (retval) { nSX3HitsTh += 1; }
+        if (!sx3evt && retval) { sx3evt = true; nSX3Evts += 1; }
+      } else if (conf.types[chan-1] == DetType::BB10) {
+        bb10hits += 1;
+        int retval = AddBB10(chan, val);
+        if (retval) { nBB10HitsTh += 1; }
+        if (!bb10evt && retval) { bb10evt = true; nBB10Evts += 1; }
+      } else if (conf.types[chan-1] == DetType::Track) {
         tracker.Set(chan, val);
+      } else if (conf.types[chan-1] == DetType::TDC) {
+        tdc.SetChan(chan, val);
       }
     }
 
