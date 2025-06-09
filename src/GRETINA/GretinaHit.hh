@@ -23,11 +23,14 @@ namespace Gret {
     double RawEnergy; //un-calibrated
     double TotalEnergy; //calibrated
     int nInteractions;
+    double SegEnergy[36];
+    int SegID[36];
     int PAD;
     float chisq;
     float t0;
     int64_t timestamp;
-    bool Fix;
+    bool BadIntE;
+    bool BadT0;
 
     double x;
     double y;
@@ -48,9 +51,10 @@ namespace Gret {
 
     bool valid;
 
-    GretinaHit() : Fix(false), valid(true) {}
+    GretinaHit() : BadIntE(false), BadT0(false), valid(true) {}
     int Build(const int64_t GEBtimestamp,
               const crys_intpts *data);
+    bool operator<(GretinaHit &other) { return TotalEnergy < other.TotalEnergy; }
 
   };
 }

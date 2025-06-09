@@ -44,5 +44,5 @@ install : libReader libGRETINA libORRUBA libS800
 	cp LDFConvert $(INSTALLDIR)/bin	
 
 clean:
-	rm lib/*.so
-	rm LDFMerge LDFConvert
+	rm -f lib/*.so
+	rm -f LDFMerge LDFConvert

@@ -48,10 +48,27 @@ namespace DATOR {
 
       int indx;
       std::string path;
+      // using a trailing string allows to have end of line comments
+      std::string trailing;
 
       runPaths.clear();
       runNos.clear();
-      while (infile >> indx >> path) {
+      std::string tline;
+      while (std::getline(infile, tline)) {
+        if(tline.size() < 2) { continue; }
+        if(tline[0] == "#"[0]){
+          continue;
+        }
+        std::stringstream st(tline);
+        st >> indx >> path >> trailing;
+        // uncomment if you want explicit output of the run numbers!
+        // std::cout << "Run num: " << indx << " Path: " << path << " Trailing: " << trailing << std::endl;
+        
+        if (runNos.size()>0) {
+          if (runNos[runNos.size()-1] == indx) {
+            std::cerr << "Warning! Same run number encountered twice?" << std::endl;
+          }
+        }
         runPaths.push_back(path);
         runNos.push_back(indx);
         if (!path.substr(path.size()-7).compare(".dat.gz")) {
@@ -70,6 +87,7 @@ namespace DATOR {
   }    
 
   /*! Switches to next file in the list of loaded files. Closes the old file and opens a new one, resetting and incrementing various counters and diagnostics. Also reads the first header of the new file in preparation for a Reader::Next() loop. 
+ * 
 
     \return Error code. <br>
     0 - New file couldn't be opened or opened file is empty. <br>
@@ -380,5 +398,14 @@ namespace DATOR {
 
 
     return 0;
-  }  
+  }
+
+
+  void BasicProcessor::Reset() { fired = false; } ;
+  void BasicProcessor::Process(unsigned long long int timestamp, unsigned short int *data, unsigned short int length){
+    time = timestamp;
+    fired = true;
+  }
+  void BasicProcessor::ProcessFinal() { };
+  void BasicProcessor::PrintSummary(std::ostream &out) {};
 }

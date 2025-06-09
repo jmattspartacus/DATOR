@@ -250,6 +250,7 @@ namespace DATOR {
     {}
     
     Reader(std::string fn) : Reader() { DataFile = fopen(fn.c_str(), "r"); gDataFile = gzdopen(fileno(DataFile), "r"); }
+    ~Reader() { }
     static double GetDither();
     int LoadPaths(std::string fn);
     int NextFile();
@@ -271,6 +272,18 @@ namespace DATOR {
     int Next();
     int Write();
     int PrintSummary(std::ostream &out);
+  };
+
+  class BasicProcessor : public DATOR::Processor {
+  public:
+    void Reset();
+    void Process(unsigned long long int timestamp, unsigned short int *data, unsigned short int length);
+
+    void ProcessFinal();
+    void PrintSummary(std::ostream &out);
+
+    unsigned long long int time;
+    int fired;
   };
 }
 

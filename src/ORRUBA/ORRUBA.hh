@@ -7,11 +7,13 @@
 #include <cmath>
 
 #include "Reader/Reader.hh"
+#include "ORRUBA/SingleParticle.hh"
+#include "ORRUBA/SX3.hh"
+#include "ORRUBA/QQQ5.hh"
+#include "ORRUBA/BB10.hh"
+#include "ORRUBA/TDC.hh"
 
-namespace Orruba {
-  
-  class SX3;
-  class QQQ5;
+namespace Orruba { 
 
   class Kinematics {
   public:
@@ -73,61 +75,10 @@ namespace Orruba {
       return (Q_gs-nrQval);
     }
   };
-    
-  class sx3cal  {
-  public:
-    float padoff[4][4];
-    float padgain[4][4];
-
-    float stripoff[2][4][4];
-    float stripgain[2][4][4];
-
-    float stripPosGain[4];
-    float stripPosOffset[4];
-    
-    sx3cal() {
-      for (int i=0; i<4; ++i) {
-        for (int j=0; j<4; ++j) {
-          padoff[i][j] = 0.0;
-          padgain[i][j] = 1.0;
-          for (int k=0; k<1; ++k) {
-            stripoff[k][i][j] = 0.0;
-            stripgain[k][i][j] = 1.0;
-          }
-        }
-          
-        stripPosGain[i] = 1.0;
-        stripPosOffset[i] = 0.0;
-      }
-    }
-
-  };
-
-  class qqq5cal  {
-  public:
-    float ringoff[4][32];
-    float ringgain[4][32];
-    
-    float secoff[4][32];
-    float secgain[4][32];
-
-    qqq5cal() {
-      for (int i=0; i<4; ++i) {
-        for (int j=0; j<32; ++j) {
-          ringoff[i][j] = 0.0;
-          ringgain[i][j] = 1.0;
-
-          secoff[i][j] = 0.0;
-          secgain[i][j] = 1.0;    
-        }
-      }
-    }
-
-  };
 
   class Configuration {
   public:
-    std::vector<std::string> types; //per ADC channel
+    std::vector<DetType> types; //per ADC channel
     std::vector<int> detID;
     std::vector<int> layer;
     std::vector<int> side; //front/back
@@ -137,9 +88,11 @@ namespace Orruba {
     std::vector<float> pedestal;
     std::vector<float> offset;
     std::vector<float> gain;
+    std::vector<float> threshold;
 
     std::vector<sx3cal> sx3cals;
     std::vector<qqq5cal> qqq5cals;
+    std::vector<bb10cal> bb10cals;
 
     float radii[32];
     float dEthetas[32];
@@ -148,164 +101,29 @@ namespace Orruba {
     float Edist = -80.0;
 
     float r_dE_strip[4];
+    float r_dE_strip_bb10[8];
     float r_E_strip[4];
     float r_dE_barrel = 98.8;
     float r_E_barrel = 100.2;
     float sx3width = 40.0;
+    float sx3zoffset = 2.0; //active area from z=0 offset
 
     Configuration();
     Configuration(std::string filename);
     Configuration(std::string name, std::string title, std::string filename);
+    void Set(std::string name, std::string title, std::string filename);
+    ~Configuration();
     void ReadConfiguration(std::string filename);
     void ReadCalibration(std::string filename);
     void ReadPositionCalibration(std::string filename);
     void ReadRadii(std::string filename);
+    void SetThresholds(float thresh);
+    void SetThresholds(int chan, float thresh);
+    void SetThresholds(DetType type, float thresh);
+    void SetThresholds(DetType type, int s, float thresh);
 
-
-  };
-
-  class SX3FrontHit  {
-  public:
-    unsigned short int side; //0=L, 1=R
-    unsigned short int ID; //0-3 for strips 1-4
-    float value;  //pedestal subtracted
-    float cal; //calibrated (basic)
-
-    SX3FrontHit() {}
-    SX3FrontHit(unsigned short int s, unsigned short int id, float val, float c) : side(s), ID(id), value(val), cal(c) {}
-
-  };
-
-  class SX3BackHit  {
-  public:
-    unsigned short int ID; //0-3 for pad 1-4
-    float value;  //pedestal subtracted
-    float cal; //calibrated (basic)
-
-    SX3BackHit() {}
-    SX3BackHit(unsigned short int id, float val, float c) : ID(id), value(val), cal(c) {}
-
-  };
-
-  class SingleParticle  {
-  public:
-    unsigned int detType; //0=QQQ5, 1=SX3
-    unsigned int detID;
-    unsigned int frontID; //strip/ring
-    unsigned int backID; //pad/sector
-    unsigned int layer; //dE/E
-
-    float frontEnergy;
-    float backEnergy;
-      
-    bool valid;
-
-    //coordinate system is gretina system: +z along beam axis, +x towards floor, +y towards beam left
-    float r; //radius
-    float x,y,z; //cartesian
-    float theta; //in spherical coordinates, angle from +z axis
-    float phi; //azimuth, angle from +x towards +y
-
-    float r_off;
-    float x_off, y_off, z_off;
-    float theta_off;
-    float phi_off;
-
-    SingleParticle() {}
-    SingleParticle(unsigned short int dt, unsigned short int did,
-                   unsigned short int fid, unsigned short int bid,
-                   unsigned short int lay,
-                   float fe, float be, bool val) :
-      detType(dt), detID(did), backID(bid), frontID(fid), layer(lay),
-      frontEnergy(fe), backEnergy(be), valid(val) {};
-
-    void OffsetBeam(float beamx, float beamy, bool verbose=false);
-    
   };
       
-  class SX3Particle : public SingleParticle {
-  public:
-    //some extra SX3 only things
-    float stripL;
-    float stripR;
-    float position; //-1 -> 1;
-
-    SX3Particle() {}
-    SX3Particle(unsigned short int dt, unsigned short int did,
-                unsigned short int pid, unsigned short int sid,
-                unsigned short int lay,
-                float pe, float sl, float sr, float pos, bool val) :
-      SingleParticle(dt, did, sid, pid, lay, sl + sr, pe, val),
-      stripL(sl), stripR(sr), position(pos) {}
-    void MakeCoords(SX3 *detector);
-
-
-  };
-
-  class QQQ5Particle : public SingleParticle {
-  public:
-      
-    void MakeCoords(QQQ5 *detector);
-    QQQ5Particle() {}
-    QQQ5Particle(unsigned short int dt, unsigned short int did,
-                 unsigned short int rid, unsigned short int sid,
-                 unsigned short int lay,
-                 float re, float se, bool val) :
-      SingleParticle(dt, did, rid, sid, lay, re, se, val) {}
-
-  };
-
-
-  class SX3  {
-  public:
-    int ID;
-    int layer;
-    int uds;
-    std::vector<SX3FrontHit> frontHits;
-    std::vector<SX3BackHit> backHits;
-      
-    //derived quantitites
-    //std::vector<SX3Particle> particles;
-
-    SX3() {}
-    SX3(unsigned short int channel, unsigned short int value);
-    void AddHit(unsigned short int channel, unsigned short int value);
-    void MakeParticles(std::vector<SingleParticle*> &single_parts);
-    //void Print(std::ofstream &out);
-
-  };
-
-  class QQQ5Hit  {
-  public:
-    unsigned short int ID; //ring or sector
-    float value;  //pedestal subtracted
-    float cal;    //calibrated (basic)
-
-    QQQ5Hit() {}
-    QQQ5Hit(unsigned short int id, float val, float c) : ID(id), value(val), cal(c) {}
-
-  };
-
-  class QQQ5   {
-  public:
-    int ID;
-    int layer; //0=dE, 1=E
-    int uds; //-1 = upstream, +1 = downstream
-    int nGoodFronts;
-    int nGoodBacks;
-    std::vector<QQQ5Hit> frontHits;
-    std::vector<QQQ5Hit> backHits;
-
-    //derived quantitites
-    //std::vector<QQQ5Particle> particles; //matched front and back hits
-
-    QQQ5() {}
-    QQQ5(unsigned short int channel, unsigned short int value);
-    void AddHit(unsigned short int channel, unsigned short int value);
-    void MakeParticles(std::vector<SingleParticle*> &single_parts);
-
-  };
-
   class TrackerHit  {
   public:
     float value;
@@ -383,7 +201,9 @@ namespace Orruba {
     
     std::vector<SX3> sx3s;
     std::vector<QQQ5> qqq5s;
+    std::vector<BB10> bb10s;
     Tracker tracker; //! prevent this from being written to TTree
+    TDC tdc;
 
     //don't like that this is a vector of pointers... means we'll be dynamically allocating each event which is expensive
     std::vector<SingleParticle*> single_parts; //these come from a single SX3 or QQQ5, with front/back together
@@ -400,14 +220,64 @@ namespace Orruba {
     //unsigned short int vals[4096];
     int nhits;
 
+    //per event counters
+    int sx3hits;
+    int qqq5hits;
+    int bb10hits;
+    int sx3parts;
+    int qqq5parts;
+    int bb10parts;
+
     bool SpuriousMyRIAD;     //! don't need this written to the tree
 
-    Event() { sx3s.reserve(24); qqq5s.reserve(8); chans.reserve(4096); vals.reserve(4096); dither = 0.0; }
+    //counters that do not get reset
+    unsigned long long nQQQ5Hits;
+    unsigned long long nSX3Hits;
+    unsigned long long nBB10Hits;
+    //hits above threshold
+    unsigned long long nQQQ5HitsTh;
+    unsigned long long nSX3HitsTh;
+    unsigned long long nBB10HitsTh;
+    //reconstructed particles
+    unsigned long long nQQQ5Particles;
+    unsigned long long nSX3Particles;
+    unsigned long long nBB10Particles;
+    unsigned long long nSpuriousMyRIAD;
+    //events with at least one hit above threshold
+    unsigned long long nQQQ5Evts;
+    unsigned long long nSX3Evts;
+    unsigned long long nBB10Evts;
+    //events with at least one hit but no reconstructed event
+    unsigned long long nBadQQQ5Evts;
+    unsigned long long nBadSX3Evts;
+    unsigned long long nBadBB10Evts;
+
+    Event() { sx3s.reserve(24); qqq5s.reserve(8); bb10s.reserve(16); chans.reserve(4096); vals.reserve(4096); dither = 0.0; 
+    nQQQ5Hits=0;
+    nSX3Hits=0;
+    nBB10Hits=0;
+    nQQQ5HitsTh=0;
+    nSX3HitsTh=0;
+    nBB10HitsTh=0;
+    nQQQ5Particles=0;
+    nSX3Particles=0;
+    nBB10Particles=0;
+    nQQQ5Evts=0;
+    nSX3Evts=0;
+    nBB10Evts=0;
+    nBadQQQ5Evts=0;
+    nBadSX3Evts=0;
+    nBadBB10Evts=0;
+    nSpuriousMyRIAD=0;
+    }
+    
     void Set();
 
-    void AddQQQ5(unsigned short int channel, unsigned short int value);
-    void AddSX3(unsigned short int channel, unsigned short int value);
-    void Reset() { sx3s.clear(); qqq5s.clear(); tracker.Reset();
+    int AddQQQ5(unsigned short int channel, unsigned short int value);
+    int AddSX3(unsigned short int channel, unsigned short int value);
+    int AddBB10(unsigned short int channel, unsigned short int value);
+    void Reset() { 
+      sx3s.clear(); qqq5s.clear(); bb10s.clear(); tracker.Reset(); tdc.Reset();
       for (int i=0; i<single_parts.size(); ++i) {
         delete single_parts[i];
       }
@@ -415,12 +285,20 @@ namespace Orruba {
       chans.clear();
       vals.clear();
       nhits = 0;
+      sx3hits = 0;
+      qqq5hits = 0;
+      bb10hits = 0;
+      sx3parts = 0;
+      qqq5parts = 0;
+      bb10parts = 0;
     }
+    ~Event() { Reset(); }
 
     void Process(unsigned long long int timestamp, unsigned short int *data, unsigned short int length);
     void ProcessFinal() {};
     
     void SetConf(Configuration c) { conf = c; }
+    void PrintSummary(std::ostream &out);
 
   };
 
