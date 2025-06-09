@@ -208,6 +208,7 @@ int main(int argc, const char **argv) {
 
   char *compressed_ext = ".dat.gz";
   char *raw_ext = ".dat";
+  bool compressed = false;
 
   if (!strcmp(&argv[1][strlen(argv[1])-7], compressed_ext)) {
     compressed = true;
@@ -248,8 +249,8 @@ int main(int argc, const char **argv) {
       outf = "GlobalMerge.dat";
     }
   }
-  if (!compressed_out) { outfile.ptr = fopen("GlobalMerge.dat", "w"); }
-  else { outfile.ptr = fopen("GlobalMerge.dat.gz", "w"); outfile.gzf = gzdopen(fileno(outfile.ptr), "w"); }
+  if (!compressed_out) { outfile.ptr = fopen(outf, "w"); }
+  else { outfile.ptr = fopen(outf, "w"); outfile.gzf = gzdopen(fileno(outfile.ptr), "w"); }
 
   int readGEB = 1;
   int readLDF = 1;

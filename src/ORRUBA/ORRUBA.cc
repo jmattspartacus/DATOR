@@ -282,6 +282,22 @@ namespace Orruba {
       qqq5parts += qqq5s[i].MakeParticles(single_parts);
     }
     nQQQ5Particles += qqq5parts;
+    
+    for (int i=0; i<bb10s.size(); ++i) {
+      bb10parts += bb10s[i].MakeParticles(single_parts);
+    }
+    nBB10Particles += bb10parts;
+
+    if (sx3evt && sx3parts == 0) {
+      nBadSX3Evts += 1;
+    }
+    if (qqq5evt && qqq5parts == 0) {
+      nBadQQQ5Evts += 1;
+    }
+    if (bb10evt && bb10parts == 0) {
+      nBadBB10Evts += 1;
+    }
+    nQQQ5Particles += qqq5parts;
     if (qqq5parts*2 > qqq5hitsth) { std::cout << "In this event there are " << qqq5parts << " reconstructed QQQ5 particles but only " << qqq5hitsth << " hits above threshold" << std::endl; }
 
     for (int i=0; i<bb10s.size(); ++i) {

@@ -7,7 +7,10 @@ docs/latex/*
 *.dylib
 *.o
 bk.*
-
+build/*
 *~
 \#*\#
 .\#*
+
+LDFMerge
+LDFConvert

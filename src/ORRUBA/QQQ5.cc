@@ -100,7 +100,6 @@ namespace Orruba {
 
     if ( nGoodFronts == 0) { return 0; }
     if ( nGoodBacks == 0) { return 0; }
-      
     
     float frontEn = 0;      
     int frontID = 0;

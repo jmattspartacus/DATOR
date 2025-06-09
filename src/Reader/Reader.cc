@@ -45,7 +45,7 @@ namespace DATOR {
     else if (!fn.substr(fn.size()-4).compare(".txt")) {
       std::ifstream infile(fn);
       if (!infile.is_open()) { std::cerr << fn << " not found!" << std::endl; return -1; }
-
+      
       int indx;
       std::string path;
       // using a trailing string allows to have end of line comments
