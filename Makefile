@@ -1,7 +1,9 @@
+
 BUILDDIR=$(shell pwd)/build
 LIBDIR=$(BUILDDIR)/lib/
 BINDIR=$(BUILDDIR)/bin/
 BUILDINCLUDEDIR=$(BUILDDIR)/include/DATOR
+
 INSTALLDIR=$(HOME)/.local
 
 CC = g++
@@ -17,6 +19,7 @@ export LIBDIR
 export INSTALLDIR
 
 all: libReader libGRETINA libORRUBA libS800 LDFMerge LDFConvert
+
 
 prepdir :
 	mkdir -p $(BINDIR)
@@ -35,6 +38,7 @@ libORRUBA : libReader
 
 libS800 : libReader
 	cd src/S800 && $(MAKE)
+
 
 LDFMerge : prepdir LDFMerge.c
 	$(C) -std=c99 -O3 -o $(BINDIR)LDFMerge LDFMerge.c -lz

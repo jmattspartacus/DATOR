@@ -30,7 +30,8 @@ namespace Orruba {
         }
       }
     }
-
+    
+    ~qqq5cal(){ }
   };
 
   class QQQ5Hit  {

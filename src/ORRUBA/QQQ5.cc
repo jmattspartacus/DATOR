@@ -10,6 +10,7 @@ namespace Orruba {
   
   QQQ5::QQQ5(unsigned short int channel, unsigned short int value) {
     ID = Event::conf.detID[channel-1];
+    if (ID < 1) { std::cerr << "Warning! QQQ5 ID = " << ID << " for channel " << channel << ", check orruba.conf" << std::endl; }
     layer = Event::conf.layer[channel-1];
     uds = Event::conf.UDS[channel-1];
     nGoodFronts = 0;
@@ -65,7 +66,7 @@ namespace Orruba {
       if (frontHits[i].cal > 10000 && ID == 1) { verbose = true; }
       }
     */
-    if (verbose) { std::cout << "=====================================" << std::endl; }
+    if (verbose) { std::cout << "============== " << ID << " =======================" << std::endl; }
     if (ID <= 4) {
       frontThresh = 300;
     }
@@ -97,7 +98,8 @@ namespace Orruba {
 
     if ( nGoodFronts > 2 ) { return 0; }
 
-      
+    if ( nGoodFronts == 0) { return 0; }
+    if ( nGoodBacks == 0) { return 0; }
     
     float frontEn = 0;      
     int frontID = 0;
@@ -140,7 +142,7 @@ namespace Orruba {
       }      
       }
     */
-    else {
+    else if (nGoodBacks > 1) {
       //search for back with closest energy to fired front
       float closest = 99999;
       for (int i=0; i<backHits.size(); ++i) {

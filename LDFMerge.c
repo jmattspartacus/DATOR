@@ -203,13 +203,13 @@ void WriteGEB(struct cFile *outfile, struct cFile *file, struct GEBHeader *heade
 
 int main(int argc, const char **argv) {
   if (argc < 2) {
-    printf("Useage: LDFMerge Global.dat[.gz] ORRUBA.ldf [OutputFile.dat[.gz]]\n");
+    printf("Useage: LDFMerge Global.dat[.gz] ORRUBA.ldf [outputPath.dat[.gz]]\n");
     exit(1);
   }
 
   char *compressed_ext = ".dat.gz";
   char *raw_ext = ".dat";
-  bool compressed_out = false;
+  bool compressed = false;
 
   if (!strcmp(&argv[1][strlen(argv[1])-7], compressed_ext)) {
     compressed = true;
@@ -228,15 +228,24 @@ int main(int argc, const char **argv) {
   gebfile.ptr = fopen(argv[1], "r");
   if (compressed) { gebfile.gzf = gzdopen(fileno(gebfile.ptr), "r"); }
   FILE *ldffile = fopen(argv[2], "r");
-  
-  const char * outf;
-  if(argc > 2){
-    outf = argv[3];
-    compressed_out = !strcmp(&outf[strlen(outf)-7], compressed_ext);
-  } else {
-    if(compressed){
-      outf = "GlobalMerge.dat.gz";
+  // this next block allows selecting an output path
+  char *outf;
+  int compressed_out = false;
+  if(argc > 3){
+    outf=argv[3];
+    if (!strcmp(&outf[strlen(outf)-7], compressed_ext)) {
       compressed_out = true;
+    }
+    else if (!strcmp(&outf[strlen(outf)-4], raw_ext)) {
+      compressed_out = false;
+    }
+    else {
+      printf("Unrecognized file extension for %s\n", outf);
+      exit(1);
+    }
+  } else {
+    if (compressed){
+      outf = "GlobalMerge.dat.gz";
     } else {
       outf = "GlobalMerge.dat";
     }

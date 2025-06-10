@@ -112,6 +112,7 @@ namespace Orruba {
     Configuration(std::string filename);
     Configuration(std::string name, std::string title, std::string filename);
     void Set(std::string name, std::string title, std::string filename);
+    ~Configuration();
     void ReadConfiguration(std::string filename);
     void ReadCalibration(std::string filename);
     void ReadPositionCalibration(std::string filename);
@@ -267,13 +268,16 @@ namespace Orruba {
     nBadQQQ5Evts=0;
     nBadSX3Evts=0;
     nBadBB10Evts=0;
-    nSpuriousMyRIAD=0;}
+    nSpuriousMyRIAD=0;
+    }
+    
     void Set();
 
     int AddQQQ5(unsigned short int channel, unsigned short int value);
     int AddSX3(unsigned short int channel, unsigned short int value);
     int AddBB10(unsigned short int channel, unsigned short int value);
-    void Reset() { sx3s.clear(); qqq5s.clear(); bb10s.clear(); tracker.Reset(); tdc.Reset();
+    void Reset() { 
+      sx3s.clear(); qqq5s.clear(); bb10s.clear(); tracker.Reset(); tdc.Reset(); 
       for (int i=0; i<single_parts.size(); ++i) {
         delete single_parts[i];
       }
@@ -288,6 +292,7 @@ namespace Orruba {
       qqq5parts = 0;
       bb10parts = 0;
     }
+    ~Event() { Reset(); }
 
     void Process(unsigned long long int timestamp, unsigned short int *data, unsigned short int length);
     void ProcessFinal() {};
