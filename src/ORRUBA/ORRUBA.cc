@@ -220,7 +220,12 @@ namespace Orruba {
     }
   }
 
-  void Configuration::SetThresholds(DetType type, float thresh) {
+  void Configuration::SetThresholds(int chan, float thresh) {
+    threshold[chan-1] = thresh;
+  }
+
+  void Configuration::SetThresholds(DetType type, float thresh)
+  {
     for (int i=0; i<threshold.size(); ++i) {
       if (types[i] == type) {
         threshold[i] = thresh;
@@ -267,6 +272,8 @@ namespace Orruba {
       }
       else if (conf.types[chan-1] == DetType::Track) {
         tracker.Set(chan, val);
+      } else if (conf.types[chan-1] == DetType::TDC) {
+        tdc.SetChan(chan, val);
       }
       else if (conf.types[chan-1] == DetType::TDC) {
         tdc.SetChan(chan, val);

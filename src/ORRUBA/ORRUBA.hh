@@ -277,7 +277,7 @@ namespace Orruba {
     int AddSX3(unsigned short int channel, unsigned short int value);
     int AddBB10(unsigned short int channel, unsigned short int value);
     void Reset() { 
-      sx3s.clear(); qqq5s.clear(); bb10s.clear(); tracker.Reset(); tdc.Reset();
+      sx3s.clear(); qqq5s.clear(); bb10s.clear(); tracker.Reset(); tdc.Reset(); 
       for (int i=0; i<single_parts.size(); ++i) {
         delete single_parts[i];
       }
