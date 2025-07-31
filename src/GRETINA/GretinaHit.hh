@@ -54,7 +54,7 @@ namespace Gret {
     GretinaHit() : BadIntE(false), BadT0(false), valid(true) {}
     int Build(const int64_t GEBtimestamp,
               const crys_intpts *data);
-    bool operator<(GretinaHit &other) { return TotalEnergy < other.TotalEnergy; }
+    bool operator<(const GretinaHit &other) const { return TotalEnergy < other.TotalEnergy; }
 
   };
 }

@@ -2,6 +2,9 @@
 #include <sstream>
 #include <string>
 #include <math.h>
+#include <time.h>
+#include <iomanip>
+#include <ctime>
 
 #include "ORRUBA/ORRUBAAuxiliary.hh"
 
@@ -111,10 +114,13 @@ namespace Orruba {
     */
 
     date = date+" "+time;
-    ss.clear();
-    ss.str(date);    
-    ss >> std::get_time(&t, "%d-%b-%y%t%H:%M:%S");
-    if (ss.fail()) { std::cerr << "Parsing of date failed!" << std::endl; }    
+    //ss.clear();
+    //ss.str(date);    
+    //ss >> std::get_time(&t, "%d-%b-%y%t%H:%M:%S");
+    //if (ss.fail()) { std::cerr << "Parsing of date failed!" << std::endl; }    
+    if (!strptime(time.c_str(), "%d-%b-%y%t%H:%M:%S", &t)) {
+      std::cerr << "Parsing of date failed!" << std::endl; 
+    }
     time_since_epoch = std::mktime(&t);
                         
     if (scalers.nrows == 0 && scalers.ncols == 0) { return; }
