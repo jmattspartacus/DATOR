@@ -53,6 +53,7 @@ namespace Gret {
     FirstX FX;
 
     double ClusterAngle;
+    double AddbackTDiff;
     float EfficiencyCal[7];
     float AbsEff;
     EffType EfficiencyType;
@@ -77,6 +78,7 @@ namespace Gret {
                       BeamRightOffset(0),
                       BeamLeftZOffset(0),
                       BeamRightZOffset(0),
+                      AddbackTDiff(400.0),
                       warnings(false) {
       for (int i=0; i<124; ++i) {
         CrystalSwap[i] = i;

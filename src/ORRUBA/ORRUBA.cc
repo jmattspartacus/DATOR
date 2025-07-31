@@ -8,10 +8,10 @@
 namespace Orruba {
   float Event::dither;
   Configuration Event::conf;
-  
+
   void Event::Process(unsigned long long int ts,
-                      unsigned short int *data,
-                      unsigned short int length) {
+      unsigned short int *data,
+      unsigned short int length) {
 
     timestamp = ts;
 
@@ -23,7 +23,7 @@ namespace Orruba {
       SpuriousMyRIAD = true;
       nSpuriousMyRIAD += 1;
     }    
-    
+
     nhits = length/4;
     chans.clear();
     vals.clear();
@@ -36,8 +36,8 @@ namespace Orruba {
   }
 
   void Basic::Process(unsigned long long int ts,
-                      unsigned short int *data,
-                      unsigned short int length) {
+      unsigned short int *data,
+      unsigned short int length) {
     timestamp = ts;
     nhits = length/4;
     chans.clear();
@@ -48,7 +48,10 @@ namespace Orruba {
       vals.push_back(data[2*i+1]);
     }
   }
-  
+
+  Configuration::~Configuration() { 
+  }
+
   void Configuration::ReadConfiguration(std::string filename) {
     std::ifstream file(filename.c_str());
     std::string line;
@@ -56,17 +59,20 @@ namespace Orruba {
       if (line.size() == 0) { continue; }
       if (line[0] == '#') { continue; }
       if (line[0] == ';') { continue; }
-      
+
       std::stringstream ss(line);
 
       std::string type;
       int chan, ID, lyr, fb, sub, lr, uds;
       float ped, off, gn;
-      ss >> chan >> type >> ID >> lyr >> fb >> uds >> sub >> lr >> ped >> off >> gn;
+      // should allow trailing comments or other things to not cause a segfault
+      std::string trailing;
+      ss >> chan >> type >> ID >> lyr >> fb >> uds >> sub >> lr >> ped >> off >> gn >> trailing;
       if (!type.compare("QQQ5")) { types[chan-1] = DetType::QQQ5; }
       else if (!type.compare("SX3")) { types[chan-1] = DetType::SX3; }
       else if (!type.compare("BB10")) { types[chan-1] = DetType::BB10; }
       else if (!type.compare("Track")) { types[chan-1] = DetType::Track; }
+      else if (!type.compare("TDC")) { types[chan-1] = DetType::TDC; }
       else { std::cout << "Warning! Unrecognized detector type for channel " << chan << std::endl; }
       detID[chan-1]=ID;
       layer[chan-1]=lyr;
@@ -92,7 +98,7 @@ namespace Orruba {
       if (line.size() == 0) { continue; }
       if (line[0] == '#') { continue; }
       if (line[0] == ';') { continue; }
-      
+
       std::stringstream ss(line);
 
       std::string type;
@@ -128,7 +134,7 @@ namespace Orruba {
       if (line.size() == 0) { continue; }
       if (line[0] == '#') { continue; }
       if (line[0] == ';') { continue; }
-      
+
       std::stringstream ss(line);
 
       int ringID;
@@ -152,7 +158,7 @@ namespace Orruba {
       if (line.size() == 0) { continue; }
       if (line[0] == '#') { continue; }
       if (line[0] == ';') { continue; }
-      
+
       std::stringstream ss(line);
 
       int detID, stripID;
@@ -185,12 +191,12 @@ namespace Orruba {
     r_E_strip[2] = std::sqrt(std::pow(r_E_barrel,2) + std::pow(sx3width/8.,2));
     r_E_strip[3] = std::sqrt(std::pow(r_E_barrel,2) + std::pow(3.*sx3width/8.,2));
   }
-    
+
 
   Configuration::Configuration() 
-    : types(2048), detID(2048), layer(2048), side(2048), subID(2048), LR(2048), UDS(2048), pedestal(2048), offset(2048), gain(2048), threshold(2048), sx3cals(24), qqq5cals(8) {
-  }
-  
+    : types(2048), detID(2048), layer(2048), side(2048), subID(2048), LR(2048), UDS(2048), pedestal(2048), offset(2048), gain(2048), threshold(2048), sx3cals(48), qqq5cals(8) {
+    }
+
   Configuration::Configuration(std::string filename) : Configuration() {
     ReadConfiguration(filename);
   }
@@ -200,13 +206,26 @@ namespace Orruba {
     //SetTitle(title.c_str());
   }
 
+  void Configuration::Set(std::string name, std::string title, std::string filename) {
+    ReadConfiguration(filename);
+  }
+
+  void Configuration::SetThresholds(int chan, float thresh) {
+    threshold[chan-1] = thresh;
+  }
+
   void Configuration::SetThresholds(float thresh) {
     for (int i=0; i<threshold.size(); ++i) {
       threshold[i] = thresh;
     }
   }
 
-  void Configuration::SetThresholds(DetType type, float thresh) {
+  void Configuration::SetThresholds(int chan, float thresh) {
+    threshold[chan-1] = thresh;
+  }
+
+  void Configuration::SetThresholds(DetType type, float thresh)
+  {
     for (int i=0; i<threshold.size(); ++i) {
       if (types[i] == type) {
         threshold[i] = thresh;
@@ -229,29 +248,35 @@ namespace Orruba {
     bool sx3evt = false;
     bool qqq5evt = false;
     bool bb10evt = false;
+    int qqq5hitsth = 0;
     for (int i=0; i<nhits; ++i) {
       unsigned short int chan = chans[i];
       unsigned short int val = vals[i];
       if (conf.types[chan-1] == DetType::QQQ5) {
-	qqq5hits += 1;
-	int retval = AddQQQ5(chan, val);
-	if (retval) { nQQQ5HitsTh += 1; }
-	if (!qqq5evt && retval)  { qqq5evt = true; nQQQ5Evts += 1; }
+        qqq5hits += 1;
+        int retval = AddQQQ5(chan, val);
+        if (retval) { qqq5hitsth+= 1; nQQQ5HitsTh += 1; }
+        if (!qqq5evt && retval)  { qqq5evt = true; nQQQ5Evts += 1; }
       }
       else if (conf.types[chan-1] == DetType::SX3) {
-	sx3hits += 1;
-	int retval = AddSX3(chan, val);
-	if (retval) { nSX3HitsTh += 1; }
-	if (!sx3evt && retval) { sx3evt = true; nSX3Evts += 1; }
+        sx3hits += 1;
+        int retval = AddSX3(chan, val);
+        if (retval) { nSX3HitsTh += 1; }
+        if (!sx3evt && retval) { sx3evt = true; nSX3Evts += 1; }
       }
       else if (conf.types[chan-1] == DetType::BB10) {
-	bb10hits += 1;
-	int retval = AddBB10(chan, val);
-	if (retval) { nBB10HitsTh += 1; }
-	if (!bb10evt && retval) { bb10evt = true; nBB10Evts += 1; }
+        bb10hits += 1;
+        int retval = AddBB10(chan, val);
+        if (retval) { nBB10HitsTh += 1; }
+        if (!bb10evt && retval) { bb10evt = true; nBB10Evts += 1; }
       }
       else if (conf.types[chan-1] == DetType::Track) {
         tracker.Set(chan, val);
+      } else if (conf.types[chan-1] == DetType::TDC) {
+        tdc.SetChan(chan, val);
+      }
+      else if (conf.types[chan-1] == DetType::TDC) {
+        tdc.SetChan(chan, val);
       }
     }
 
@@ -279,7 +304,24 @@ namespace Orruba {
     if (bb10evt && bb10parts == 0) {
       nBadBB10Evts += 1;
     }
-      
+    nQQQ5Particles += qqq5parts;
+    if (qqq5parts*2 > qqq5hitsth) { std::cout << "In this event there are " << qqq5parts << " reconstructed QQQ5 particles but only " << qqq5hitsth << " hits above threshold" << std::endl; }
+
+    for (int i=0; i<bb10s.size(); ++i) {
+      bb10parts += bb10s[i].MakeParticles(single_parts);
+    }
+    nBB10Particles += bb10parts;
+
+    if (sx3evt && sx3parts == 0) {
+      nBadSX3Evts += 1;
+    }
+    if (qqq5evt && qqq5parts == 0) {
+      nBadQQQ5Evts += 1;
+    }
+    if (bb10evt && bb10parts == 0) {
+      nBadBB10Evts += 1;
+    }
+
     tracker.presentX = 0;
     tracker.presentY = 0;      
     for (int i=0; i<16; ++i) {        
@@ -376,7 +418,7 @@ namespace Orruba {
       std::cout << r << "   " << phi << std::endl;
       std::cout << theta << std::endl;
     }
-          
+
     x_off = x - beamx;
     y_off = y - beamy;
     z_off = z;
@@ -393,11 +435,11 @@ namespace Orruba {
     if (phi_off < 0) { phi_off += 2.0*M_PI; }
     //phi = std::acos(x / r);
     /*
-      if (phi != std::asin(y / r)) {
-      std::cout << "Warning! Phi does not match" << std::endl;
-      std::cout << phi << "   " << std::asin(y/r) << std::endl;
-      }
-    */
+       if (phi != std::asin(y / r)) {
+       std::cout << "Warning! Phi does not match" << std::endl;
+       std::cout << phi << "   " << std::asin(y/r) << std::endl;
+       }
+       */
 
     if (verbose) {
       std::cout << "=========== NEW ===========" << std::endl;
@@ -412,13 +454,13 @@ namespace Orruba {
     if (value != 0 || tdc != 0) { present = 1; }
     if (value == 0) { valid = false; return present; }
     if (tdc == 0) { valid = false; return present; }
-        
+
     if (tdc > 1000 && tdc < 2000) { valid = true; return present; }
     valid = false;
     return present;
-      
+
   }
-    
+
   void Tracker::Set(unsigned short channel, unsigned short value) {
     if (Event::conf.side[channel-1] == 0) {
       cathode_val = value - Event::conf.pedestal[channel-1] + Orruba::Event::Dither();
@@ -490,7 +532,7 @@ namespace Orruba {
         x = (goodWires[0] + goodWires[1])/2.0;
       }
     }
-        
+
     //x = wsum/sum;
     //if (x > 0 && x < 16) { validX = true; }
     ycal = -(x*2.0 - 8.5*2.0); //now into gretina frame
@@ -522,7 +564,7 @@ namespace Orruba {
       }
     }
     y = maxy;
-      
+
     if (nGoodY == 1) { validY = true; y = goodWires[0]; }
     else if (nGoodY == 2) {
       if (abs(goodWires[0] - goodWires[1]) == 1) {
@@ -530,7 +572,7 @@ namespace Orruba {
         y = (goodWires[0] + goodWires[1])/2.0;
       }
     }
-      
+
     //y = wsum/sum ;
     //if (y > 0 && y < 16) { validY = true; }
     xcal = -(y*2.0 - 8.5*2.0); //now into gretina frame

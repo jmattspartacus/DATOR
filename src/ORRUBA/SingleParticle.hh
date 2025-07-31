@@ -7,7 +7,8 @@ namespace Orruba {
     QQQ5,
     SX3,
     BB10,
-    Track
+    Track,
+    TDC
   };
 
 class SingleParticle  {
