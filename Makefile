@@ -6,8 +6,8 @@ BUILDINCLUDEDIR=$(BUILDDIR)/include/DATOR
 
 INSTALLDIR=$(HOME)/.local
 
-#CC = g++
-CC = ~/gcc/installexec/gcc/bin/g++
+CC = g++
+#CC = ~/gcc/installexec/gcc/bin/g++
 CFLAGS = `root-config --cflags` -O3 -g -fPIC
 LIBS = -Wl,--no-as-needed -lz
 ROOTLIBS = `root-config --libs --glibs` -Wl,--no-as-needed -lMathMore
