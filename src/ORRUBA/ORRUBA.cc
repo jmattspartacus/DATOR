@@ -220,10 +220,6 @@ namespace Orruba {
     }
   }
 
-  void Configuration::SetThresholds(int chan, float thresh) {
-    threshold[chan-1] = thresh;
-  }
-
   void Configuration::SetThresholds(DetType type, float thresh)
   {
     for (int i=0; i<threshold.size(); ++i) {
