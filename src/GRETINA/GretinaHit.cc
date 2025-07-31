@@ -8,8 +8,23 @@ namespace Gret {
   int GretinaHit::Build(const int64_t GEBtimestamp,
                         const crys_intpts *data) {
 
+    // IMPORTANT: Please note!
+    //
+    // cryst_intpts is a struct of fixed length, corresponding to the MAXIMUM number of interaction points (16).
+    // However, we want to be able to read so-called "cropped" type-1 data, where the (non-existent) interaction point 
+    // zeros are cropped from the end of each event
+    //
+    // To do this with minimal distruption, we remove the check on the payload size in Gretina.cc, and cast the
+    // pointer to the (potentially incomplete) type-1 payload to (*cryst_intpts)
+    //
+    // This means that we can continue processing AS LONG AS we do not read the data->intpts array beyond element 
+    // data->intpts[data->num-1]. Beyond this, behaviour is undefined and you should expect buffer overflow 
+    // errors. User beware!
+    //
+    //
     valid = true;
-    Fix = false;
+    BadIntE = false;
+    BadT0 = false;
     CrystalID = Event::conf.CrystalSwap[data->crystal_id];
     if (true) {
       if (CrystalID != data->crystal_id ) {
@@ -20,7 +35,7 @@ namespace Gret {
     PAD = data->pad;
     chisq = data->chisq;
     t0 = data->t0;
-    timestamp = GEBtimestamp; //units 20 ns
+    timestamp = GEBtimestamp; //units 10 ns
 
     if (Hole < 4) { std::cerr << "bad Gretina hit! ignoring" << std::endl; valid = false; return -1; }
 
@@ -39,14 +54,8 @@ namespace Gret {
     //   std::cout << "Bad PAD = " << PAD << ", crystal ID = " << CrystalID << std::endl;
     // }
     
-    double offset = 0.0;
-    double gain = 1.0;
-
-    if (Event::conf.Calibration.find(CrystalID) != Event::conf.Calibration.end()) {
-      auto cal = Event::conf.Calibration.at(CrystalID);
-      offset = cal.first;
-      gain = cal.second;
-    }
+    double offset = Event::conf.CalOffset[CrystalID];
+    double gain = Event::conf.CalGain[CrystalID];
 
     RawEnergy = data->tot_e;
     TotalEnergy = (data->tot_e)*gain + offset;
@@ -55,11 +64,14 @@ namespace Gret {
       if (true) {
         std::cerr << "Warning! crystal t0 is NaN: " << data->t0 << std::endl;
       }
-      Fix = true;
-      Time = 10*data->timestamp + (long long int)(Event::conf.MeanT0);      
+      BadT0 = true;
+      Time = 10*data->timestamp + (long long int)Event::conf.MeanT0;
+      //Time = data->timestamp;
+      
     }
     else {
-      Time = 10*data->timestamp + (long long int)(data->t0);
+      Time = 10*data->timestamp + (long long int)data->t0;
+      //Time = data->timestamp;
     }
 
     double minz = 1e6;
@@ -76,6 +88,10 @@ namespace Gret {
       if (Event::conf.warnings) {std::cerr << "Bad number of interaction points (" << data->num << "). PAD = " << data->pad << std::endl;}
       valid = false;        
     }
+    else if (data->num == 0) {
+      if (Event::conf.warnings) {std::cerr << "Bad number of interaction points (" << data->num << "). PAD = " << data->pad << std::endl;}
+      valid = false;        
+    }
     else {
       for (int i=0; i<data->num; ++i) {
         double int_x = data->intpts[i].x;
@@ -83,9 +99,12 @@ namespace Gret {
         double int_z = data->intpts[i].z;
         double int_e = data->intpts[i].e;
 
+	SegEnergy[i] = data->intpts[i].seg_ener;
+	SegID[i] = data->intpts[i].seg;
+
         //std::cout << i << "   " << data->intpts[i].seg << "   " << data->intpts[i].seg_ener << "   " << data->intpts[i].e  << "   " << int_x << "   " << int_y << "   " << int_z << std::endl;
 
-        if (Fix) {
+        if (BadT0) {
           int_x = 0;
           int_y = 0;
           int_z = 0;
@@ -93,11 +112,17 @@ namespace Gret {
         }
       
         if (int_e <= 0) {
+          if (Event::conf.warnings) {
+            std::cerr << "Interaction (" << i << "/" << data->num << ") energy < 0! " << std::endl;
+            std::cerr << "   Interaction energy = " << int_e << std::endl;
+            std::cerr << "   Segment energy = " << data->intpts[i].seg_ener << std::endl;
+            std::cerr << "   PAD = " << data->pad << std::endl;
+          }
           int_x = 0;
           int_y = 0;
           int_z = 0;
-          int_e = 1;
-          Fix = true;
+          int_e = 1;          
+          BadIntE = true;
         }      
       
         switch(Event::conf.FX) {        
@@ -208,8 +233,10 @@ namespace Gret {
     // }
 
     if (!(Event::conf.FixValid)) {
-      if (Fix) { valid = false; }
+      if (BadT0 || BadIntE) { valid = false; }
     }
+
+    if (RawEnergy < 50) { valid = false; } //energy threshold
 
     return 0;
   }

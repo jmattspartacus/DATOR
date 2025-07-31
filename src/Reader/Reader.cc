@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <iomanip>
 #include <vector>
 #include <zlib.h>
@@ -45,13 +46,20 @@ namespace DATOR {
     else if (!fn.substr(fn.size()-4).compare(".txt")) {
       std::ifstream infile(fn);
       if (!infile.is_open()) { std::cerr << fn << " not found!" << std::endl; return -1; }
-
+      
+      std::string tline;
       int indx;
       std::string path;
 
       runPaths.clear();
       runNos.clear();
-      while (infile >> indx >> path) {
+      while (std::getline(infile, tline)) {
+        if(tline[0] == "#"[0]){
+          continue;
+        }
+        std::stringstream st(tline);
+        st >> indx >> path;
+
         runPaths.push_back(path);
         runNos.push_back(indx);
         if (!path.substr(path.size()-7).compare(".dat.gz")) {
@@ -380,5 +388,14 @@ namespace DATOR {
 
 
     return 0;
-  }  
+  }
+
+
+  void BasicProcessor::Reset() { fired = false; } ;
+  void BasicProcessor::Process(unsigned long long int timestamp, unsigned short int *data, unsigned short int length){
+    time = timestamp;
+    fired = true;
+  }
+  void BasicProcessor::ProcessFinal() { };
+  void BasicProcessor::PrintSummary(std::ostream &out) {};
 }

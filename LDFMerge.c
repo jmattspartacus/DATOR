@@ -29,6 +29,9 @@ Updates:
 
 #define MAX_INT64 18446744073709551615ULL
 
+#define DATA 0x41544144
+#define SCALER 0x4C414353
+
 struct ldfdata {
     char type[4];
     unsigned int num_words;
@@ -51,10 +54,9 @@ bool compressed = false; //yes, this is global
 int ReadLDF(FILE *fptr, struct ldfdata *data, int *startWord, int *stopWord) {
   int readsuccess = 1;
 
-  if (data->type[0] == 0x44 &&
-      data->type[1] == 0x41 &&
-      data->type[2] == 0x54 &&
-      data->type[3] == 0x41 ){ //lit. 44 41 54 41 packed as 4144 4154 in hexdump
+  unsigned int typeID = *((unsigned int*)(&data->type[0])); //crucify me for crimes of memory abuse
+
+  if ( typeID == DATA ){ //lit. 44 41 54 41 packed as 4144 4154 in hexdump
     int good = 0;
     int wordPtr = *startWord;
     for (int word = wordPtr; word < 8192; ++word) {
@@ -64,14 +66,20 @@ int ReadLDF(FILE *fptr, struct ldfdata *data, int *startWord, int *stopWord) {
     }
     if (good == 1) { return 1; }
   }
+  else if ( typeID == SCALER ) {
+    if (startWord[0] == 0) { 
+      startWord[0] = 0;
+      stopWord[0] = 1023;
+      data->num_words=1024;
+      return 1;
+    }
+  }
   
   while ( true ) {
     readsuccess = fread ( data, sizeof ( *data ), 1, fptr );
     if ( readsuccess == 0 ) { break; }
-    if ( data->type[0] == 0x44 &&
-         data->type[1] == 0x41 &&
-         data->type[2] == 0x54 &&
-         data->type[3] == 0x41 ){ //lit. 44 41 54 41 packed as 4144 4154 in hexdump
+    typeID = *((unsigned int*)(&data->type[0])); //crucify me for crimes of memory abuse
+    if ( typeID == DATA || typeID == SCALER ){ //lit. 44 41 54 41 packed as 4144 4154 in hexdump
         break;
     }
   }
@@ -121,7 +129,13 @@ int GetLDFTime(struct ldfdata *data, int *startWord, int *stopWord, unsigned lon
 void WriteLDF(struct cFile *outfile, struct ldfdata *data, int *startWord, int *stopWord, unsigned long long int time_LDF) {
   struct GEBHeader header;
   header.timestamp = time_LDF;
-  header.type = 19;
+  unsigned int typeID = *((unsigned int*)(&data->type[0])); //crucify me for crimes of memory abuse
+  if (typeID == DATA) {
+    header.type = 19;
+  }
+  else if (typeID == SCALER) {
+    header.type = 22;
+  }
   header.length = data->num_words*4;
 
   if (!compressed) {
@@ -188,12 +202,13 @@ void WriteGEB(struct cFile *outfile, struct cFile *file, struct GEBHeader *heade
 
 int main(int argc, const char **argv) {
   if (argc < 2) {
-    printf("Useage: LDFMerge Global.dat[.gz] ORRUBA.ldf\n");
+    printf("Useage: LDFMerge Global.dat[.gz] ORRUBA.ldf [OutputFile.dat[.gz]]\n");
     exit(1);
   }
 
   char *compressed_ext = ".dat.gz";
   char *raw_ext = ".dat";
+  bool compressed_out = false;
 
   if (!strcmp(&argv[1][strlen(argv[1])-7], compressed_ext)) {
     compressed = true;
@@ -212,8 +227,21 @@ int main(int argc, const char **argv) {
   gebfile.ptr = fopen(argv[1], "r");
   if (compressed) { gebfile.gzf = gzdopen(fileno(gebfile.ptr), "r"); }
   FILE *ldffile = fopen(argv[2], "r");
-  if (!compressed) { outfile.ptr = fopen("GlobalMerge.dat", "w"); }
-  else { outfile.ptr = fopen("GlobalMerge.dat.gz", "w"); outfile.gzf = gzdopen(fileno(outfile.ptr), "w"); }
+  
+  const char * outf;
+  if(argc > 2){
+    outf = argv[3];
+    compressed_out = !strcmp(&outf[strlen(outf)-7], compressed_ext);
+  } else {
+    if(compressed){
+      outf = "GlobalMerge.dat.gz";
+      compressed_out = true;
+    } else {
+      outf = "GlobalMerge.dat";
+    }
+  }
+  if (!compressed_out) { outfile.ptr = fopen(outf, "w"); }
+  else { outfile.ptr = fopen(outf, "w"); outfile.gzf = gzdopen(fileno(outfile.ptr), "w"); }
 
   int readGEB = 1;
   int readLDF = 1;
@@ -229,6 +257,10 @@ int main(int argc, const char **argv) {
   unsigned long long int ctrLDF = 0;
   unsigned long long int ctrGEB = 0;
   unsigned long long discards = 0;
+
+  unsigned long long int type19 = 0;
+  unsigned long long int type22 = 0;
+  
   while (true) {
     int retval = 1;
     if ((ctrLDF + ctrGEB) % 1000 == 0) {
@@ -258,17 +290,28 @@ int main(int argc, const char **argv) {
         else {
           readCtrLDF += 1;
           readLDF = 0;
+
+          unsigned int typeID = *((unsigned int*)(&dataLDF.type[0])); //crucify me for crimes of memory abuse
+
+          if (typeID == SCALER) { time_LDF = time_LDF < time_GEB ? time_LDF : time_GEB; }
+          else {
+            retval = GetLDFTime(&dataLDF, &startWord, &stopWord, &time_LDF);
+            if (retval == 0) {
+              printf("\nSpurious MyRIAD, writing immediately\n");
+              if (typeID == DATA) {
+                type19 += 1;
+              }
+              else if (typeID == SCALER) {
+                type22 += 1;
+              }                      
+              WriteLDF(&outfile, &dataLDF, &startWord, &stopWord, time_LDF);
+              readLDF = 1;
+              startWord = stopWord + 1;
+              ctrLDF += 1;
+            }
           
-          retval = GetLDFTime(&dataLDF, &startWord, &stopWord, &time_LDF);
-          if (retval == 0) {
-            printf("\nSpurious MyRIAD, writing immediately\n");
-            WriteLDF(&outfile, &dataLDF, &startWord, &stopWord, time_LDF);
-            readLDF = 1;
-            startWord = stopWord + 1;
-            ctrLDF += 1;
+            //printf("%i  %llu\n", retval, time_LDF);
           }
-          
-          //printf("%i  %llu\n", retval, time_LDF);
         }
       }
     }
@@ -278,8 +321,15 @@ int main(int argc, const char **argv) {
     }
 
                
-    if (time_LDF < time_GEB) {
+    if (time_LDF <= time_GEB) {
+      unsigned int typeID = *((unsigned int*)(&dataLDF.type[0])); //crucify me for crimes of memory abuse
       WriteLDF(&outfile, &dataLDF, &startWord, &stopWord, time_LDF);
+      if (typeID == DATA) {
+        type19 += 1;
+      }
+      else if (typeID == SCALER) {
+        type22 += 1;
+      }                      
       readLDF = 1;
       startWord = stopWord + 1;
       ctrLDF += 1;
@@ -303,6 +353,7 @@ int main(int argc, const char **argv) {
   fclose(ldffile);
   fclose(outfile.ptr);
   printf("\nLDF events: %llu read, %llu written\n", readCtrLDF, ctrLDF);
+  printf("            %llu type-19, %llu type-22\n", type19, type22);  
   printf("GEB events: %llu read, %llu written, %llu type-19 discarded\n", readCtrGEB, ctrGEB, discards);
   printf("Done\n");
   

@@ -12,8 +12,9 @@
 #include "GRETINA/Gamma.hh"
 
 #define GRETINA_MAXHITS 64
-
+  
 namespace Gret {
+
   class Event : public DATOR::Processor {
   public:
     int nhits;
@@ -28,6 +29,9 @@ namespace Gret {
     //counters which are not reset
     unsigned long long int nGretina;
     unsigned long long int nValidGretina;
+    unsigned long long int nBadPAD;
+    unsigned long long int nBadIntE;
+    unsigned long long int nBadT0;
     unsigned long long int nTotalGammas;
     unsigned long long int nEvents;
     
@@ -39,7 +43,7 @@ namespace Gret {
                const crys_intpts *data);
     int BuildGammas();
 
-    void ResetCounters() { nGretina = 0; nValidGretina = 0; nTotalGammas = 0; nEvents = 0; }
+    void ResetCounters() { nGretina = 0; nValidGretina = 0; nTotalGammas = 0; nEvents = 0; nBadT0 = 0; nBadIntE = 0; nBadPAD = 0; }
     void Reset() { nhits = 0; ngammas = 0; hits.clear(); gammas.clear(); gammaSum = 0;}
     void Process(unsigned long long timestamp, unsigned short int *data, unsigned short int length);
     void ProcessFinal() { nEvents += 1; BuildGammas(); }

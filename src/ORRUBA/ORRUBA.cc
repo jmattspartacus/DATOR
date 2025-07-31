@@ -21,6 +21,7 @@ namespace Orruba {
 
     if (w1 == w2 && w1 == w3) {
       SpuriousMyRIAD = true;
+      nSpuriousMyRIAD += 1;
     }    
     
     nhits = length/4;
@@ -62,7 +63,11 @@ namespace Orruba {
       int chan, ID, lyr, fb, sub, lr, uds;
       float ped, off, gn;
       ss >> chan >> type >> ID >> lyr >> fb >> uds >> sub >> lr >> ped >> off >> gn;
-      types[chan-1]=type;
+      if (!type.compare("QQQ5")) { types[chan-1] = DetType::QQQ5; }
+      else if (!type.compare("SX3")) { types[chan-1] = DetType::SX3; }
+      else if (!type.compare("BB10")) { types[chan-1] = DetType::BB10; }
+      else if (!type.compare("Track")) { types[chan-1] = DetType::Track; }
+      else { std::cout << "Warning! Unrecognized detector type for channel " << chan << std::endl; }
       detID[chan-1]=ID;
       layer[chan-1]=lyr;
       side[chan-1]=fb;
@@ -76,7 +81,8 @@ namespace Orruba {
       pedestal[chan-1]=ped;
       offset[chan-1]=off;
       gain[chan-1]=gn;
-    }
+      threshold[chan-1] = 0;
+    }    
   }
 
   void Configuration::ReadCalibration(std::string filename) {
@@ -111,7 +117,7 @@ namespace Orruba {
         qqq5cals[det-1].ringgain[sector][ring] = ringgain;
         qqq5cals[det-1].secoff[sector][ring] = secoff;
         qqq5cals[det-1].secgain[sector][ring] = secgain;
-      }
+      }      
     }
   }
 
@@ -165,6 +171,15 @@ namespace Orruba {
     r_dE_strip[2] = std::sqrt(std::pow(r_dE_barrel,2) + std::pow(sx3width/8.,2));
     r_dE_strip[3] = std::sqrt(std::pow(r_dE_barrel,2) + std::pow(3.*sx3width/8.,2));
 
+    r_dE_strip_bb10[0] = std::sqrt(std::pow(r_dE_barrel,2) + std::pow(7.*sx3width/16.,2));
+    r_dE_strip_bb10[1] = std::sqrt(std::pow(r_dE_barrel,2) + std::pow(5.*sx3width/16.,2));
+    r_dE_strip_bb10[2] = std::sqrt(std::pow(r_dE_barrel,2) + std::pow(3.*sx3width/16.,2));
+    r_dE_strip_bb10[3] = std::sqrt(std::pow(r_dE_barrel,2) + std::pow(1.*sx3width/16.,2));
+    r_dE_strip_bb10[4] = std::sqrt(std::pow(r_dE_barrel,2) + std::pow(1.*sx3width/16.,2));
+    r_dE_strip_bb10[5] = std::sqrt(std::pow(r_dE_barrel,2) + std::pow(3.*sx3width/16.,2));
+    r_dE_strip_bb10[6] = std::sqrt(std::pow(r_dE_barrel,2) + std::pow(5.*sx3width/16.,2));
+    r_dE_strip_bb10[7] = std::sqrt(std::pow(r_dE_barrel,2) + std::pow(7.*sx3width/16.,2));
+
     r_E_strip[0] = std::sqrt(std::pow(r_E_barrel,2) + std::pow(3.*sx3width/8.,2));
     r_E_strip[1] = std::sqrt(std::pow(r_E_barrel,2) + std::pow(sx3width/8.,2));
     r_E_strip[2] = std::sqrt(std::pow(r_E_barrel,2) + std::pow(sx3width/8.,2));
@@ -173,7 +188,7 @@ namespace Orruba {
     
 
   Configuration::Configuration() 
-    : types(2048), detID(2048), layer(2048), side(2048), subID(2048), LR(2048), UDS(2048), pedestal(2048), offset(2048), gain(2048), sx3cals(24), qqq5cals(8) {
+    : types(2048), detID(2048), layer(2048), side(2048), subID(2048), LR(2048), UDS(2048), pedestal(2048), offset(2048), gain(2048), threshold(2048), sx3cals(24), qqq5cals(8) {
   }
   
   Configuration::Configuration(std::string filename) : Configuration() {
@@ -185,30 +200,84 @@ namespace Orruba {
     //SetTitle(title.c_str());
   }
 
+  void Configuration::SetThresholds(float thresh) {
+    for (int i=0; i<threshold.size(); ++i) {
+      threshold[i] = thresh;
+    }
+  }
+
+  void Configuration::SetThresholds(DetType type, float thresh) {
+    for (int i=0; i<threshold.size(); ++i) {
+      if (types[i] == type) {
+        threshold[i] = thresh;
+      }
+    }
+  }
+
+  void Configuration::SetThresholds(DetType type, int s, float thresh) {
+    for (int i=0; i<threshold.size(); ++i) {
+      if (types[i] == type && side[i] == s) {
+        threshold[i] = thresh;
+      }
+    }
+  }
+
   //  void Event::Set(unsigned short int *channels,
   //                  unsigned short int *values,
   //                  int &nhits) {
   void Event::Set() {
+    bool sx3evt = false;
+    bool qqq5evt = false;
+    bool bb10evt = false;
     for (int i=0; i<nhits; ++i) {
       unsigned short int chan = chans[i];
       unsigned short int val = vals[i];
-      if (!conf.types[chan-1].compare("QQQ5")) {
-        AddQQQ5(chan, val);
+      if (conf.types[chan-1] == DetType::QQQ5) {
+	qqq5hits += 1;
+	int retval = AddQQQ5(chan, val);
+	if (retval) { nQQQ5HitsTh += 1; }
+	if (!qqq5evt && retval)  { qqq5evt = true; nQQQ5Evts += 1; }
       }
-      else if (!conf.types[chan-1].compare("SX3")) {
-        AddSX3(chan, val);
+      else if (conf.types[chan-1] == DetType::SX3) {
+	sx3hits += 1;
+	int retval = AddSX3(chan, val);
+	if (retval) { nSX3HitsTh += 1; }
+	if (!sx3evt && retval) { sx3evt = true; nSX3Evts += 1; }
       }
-      else if (!conf.types[chan-1].compare("Track")) {
+      else if (conf.types[chan-1] == DetType::BB10) {
+	bb10hits += 1;
+	int retval = AddBB10(chan, val);
+	if (retval) { nBB10HitsTh += 1; }
+	if (!bb10evt && retval) { bb10evt = true; nBB10Evts += 1; }
+      }
+      else if (conf.types[chan-1] == DetType::Track) {
         tracker.Set(chan, val);
       }
     }
 
     for (int i=0; i<sx3s.size(); ++i) {
-      sx3s[i].MakeParticles(single_parts);
+      sx3parts += sx3s[i].MakeParticles(single_parts);
     }
+    nSX3Particles += sx3parts;
 
     for (int i=0; i<qqq5s.size(); ++i) {
-      qqq5s[i].MakeParticles(single_parts);
+      qqq5parts += qqq5s[i].MakeParticles(single_parts);
+    }
+    nQQQ5Particles += qqq5parts;
+    
+    for (int i=0; i<bb10s.size(); ++i) {
+      bb10parts += bb10s[i].MakeParticles(single_parts);
+    }
+    nBB10Particles += bb10parts;
+
+    if (sx3evt && sx3parts == 0) {
+      nBadSX3Evts += 1;
+    }
+    if (qqq5evt && qqq5parts == 0) {
+      nBadQQQ5Evts += 1;
+    }
+    if (bb10evt && bb10parts == 0) {
+      nBadBB10Evts += 1;
     }
       
     tracker.presentX = 0;
@@ -222,356 +291,80 @@ namespace Orruba {
     //tracker.Print(std::cout);
   }
 
-  void Event::AddQQQ5(unsigned short int channel, unsigned short int value) {
+  int Event::AddQQQ5(unsigned short int channel, unsigned short int value) {
+    int retval = 0;
     for (int i=0; i<qqq5s.size(); ++i) {
       if (conf.detID[channel-1] == qqq5s[i].ID) {
-        qqq5s[i].AddHit(channel, value);
-        return;
+        retval = qqq5s[i].AddHit(channel, value);
+        nQQQ5Hits += 1;
+        return retval;
       }
     }
-    qqq5s.emplace_back(channel, value);
+    if (((float)value-conf.pedestal[channel-1]) > conf.threshold[channel-1]) {
+      qqq5s.emplace_back(channel, value);
+      retval = 1;
+    }
+    nQQQ5Hits += 1;
+    return retval;
   }
 
-  void Event::AddSX3(unsigned short int channel, unsigned short int value) {
+  int Event::AddSX3(unsigned short int channel, unsigned short int value) {
+    int retval = 0;
     for (int i=0; i<sx3s.size(); ++i) {
       if (conf.detID[channel-1] == sx3s[i].ID) {
-        sx3s[i].AddHit(channel, value);
-        return;
+        retval = sx3s[i].AddHit(channel, value);
+        nSX3Hits += 1;
+        return retval;
       }
     }
-    sx3s.emplace_back(channel, value);
+    if (((float)value-conf.pedestal[channel-1]) > conf.threshold[channel-1]) {
+      sx3s.emplace_back(channel, value);
+      retval = 1;
+    }
+    nSX3Hits += 1;
+    return retval;
   }
 
-  SX3::SX3(unsigned short int channel, unsigned short int value) {
-    ID = Event::conf.detID[channel-1];
-    layer = Event::conf.layer[channel-1];
-    uds = Event::conf.UDS[channel-1];
-    float val = (value-Event::conf.pedestal[channel-1] + Orruba::Event::Dither());
-    float cal = val*Event::conf.gain[channel-1] + Event::conf.offset[channel-1];
-    frontHits.reserve(8);
-    backHits.reserve(4);
-    if (Event::conf.side[channel-1] == 0) { //front
-      frontHits.emplace_back(Event::conf.LR[channel-1], Event::conf.subID[channel-1], val, cal);
+  int Event::AddBB10(unsigned short int channel, unsigned short int value) {
+    int retval = 0;
+    for (int i=0; i<bb10s.size(); ++i) {
+      if (conf.detID[channel-1] == bb10s[i].ID) {
+        retval = bb10s[i].AddHit(channel, value);
+        nBB10Hits += 1;
+        return retval;
+      }
     }
-    else if (Event::conf.side[channel-1] == 1) { //back
-      backHits.emplace_back(Event::conf.subID[channel-1], val, cal);
+    if (((float)value - conf.pedestal[channel-1]) > conf.threshold[channel-1]) {
+      bb10s.emplace_back(channel, value);
+      retval = 1;
     }
-    else {
-      std::cerr << "Warning! Channel " << channel << " with invalid front/back value" << std::endl;
-    }
-  }
-  void SX3::AddHit(unsigned short int channel, unsigned short int value) {
-    float val = (value-Event::conf.pedestal[channel-1] + Orruba::Event::Dither());
-    float cal = val*Event::conf.gain[channel-1] + Event::conf.offset[channel-1];    
-    if (Event::conf.side[channel-1] == 0) { //front
-      frontHits.emplace_back(Event::conf.LR[channel-1], Event::conf.subID[channel-1], val, cal);
-    }
-    else if (Event::conf.side[channel-1] == 1) { //back
-      backHits.emplace_back(Event::conf.subID[channel-1], val, cal);
-    }
-    else {
-      std::cerr << "Warning! Channel " << channel << " with invalid front/back value" << std::endl;
-    }
+    nBB10Hits += 1;
+    return retval;
   }
 
-  void SX3Particle::MakeCoords(SX3 *detector) {
-    //this r is in the cylindrical coordinate system
-    if (detector->layer == 0) { r = Event::conf.r_dE_strip[frontID]; }
-    else if (detector->layer == 1) { r = Event::conf.r_E_strip[frontID]; }
-
-    //theta in spherical polar
-    theta = std::atan(r/position);
-    if (theta < 0 ) { theta += 3.14159265358799323846; }      
-      
-    float deltaphi = std::atan(Event::conf.sx3width/8.*std::abs((int)(3-2*frontID))/Event::conf.r_dE_barrel);
-    int sign = 1;
-    if (detector->layer == 1) {
-      if (frontID < 2) { sign = 1; } //low strip ID = high phi for E
-      else if (frontID >= 2) { sign = -1; }
+  void Event::PrintSummary(std::ostream &out) {
+    out << "--------- ORRUBA Summary --------" << std::endl;
+    if (nQQQ5Hits>0) {
+      out << "   QQQ5 " << ANSI_COLOR_YELLOW << nQQQ5Hits << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_YELLOW << nQQQ5HitsTh << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_GREEN << nQQQ5Particles << ANSI_COLOR_RESET << " reconstructed particles" << std::endl;
+      out << "         " << ANSI_COLOR_GREEN << (double)nQQQ5HitsTh/(double)nQQQ5Hits*100.0 << "%" << ANSI_COLOR_RESET << " hits above threshold" << std::endl;
+      out << "         " << ANSI_COLOR_GREEN << (double)nQQQ5HitsTh/(double)nQQQ5Particles << ANSI_COLOR_RESET << " hits above threshold/particle" << std::endl;
+      out << "         " << ANSI_COLOR_RED << nBadQQQ5Evts << ANSI_COLOR_RESET << " events with QQQ5 hits but no reconstructed particle (" << ANSI_COLOR_RED << (double)nBadQQQ5Evts/(double)nQQQ5Evts*100.0 << "%" << ANSI_COLOR_RESET << ")" << std::endl;
     }
-    else if (detector->layer == 0) {
-      if (frontID < 2) { sign = -1; } //other way around for dE layer
-      else if (frontID >= 2) { sign = 1; }
+    if (nSX3Hits>0) {
+      out << "   SX3 " << ANSI_COLOR_YELLOW << nSX3Hits << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_YELLOW << nSX3HitsTh << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_GREEN << nSX3Particles << ANSI_COLOR_RESET << " reconstructed particles" << std::endl;
+      out << "         " << ANSI_COLOR_GREEN << (double)nSX3HitsTh/(double)nSX3Hits*100.0 << "%" << ANSI_COLOR_RESET << " hits above threshold" << std::endl;
+      out << "         " << ANSI_COLOR_GREEN << (double)nSX3HitsTh/(double)nSX3Particles << ANSI_COLOR_RESET << " hits above threshold/particle" << std::endl;
+      out << "         " << ANSI_COLOR_RED << nBadSX3Evts << ANSI_COLOR_RESET << " events with SX3 hits but no reconstructed particle (" << ANSI_COLOR_RED << (double)nBadSX3Evts/(double)nSX3Evts*100.0 << "%" << ANSI_COLOR_RESET << ")" << std::endl;
     }
-
-    //phi of SX3 centre, common between cylindrical + spherical systems
-    phi = (detector->ID+6)%12 * 2.*3.14159265/12.; //0-> down in lab frame-> +x, 6->up
-    phi += sign*deltaphi;
-    if (phi<0) { phi += 2.*3.14159265; }
-
-    z = position;
-    x = r*std::cos(phi);
-    y = r*std::sin(phi);     
-  }
-
-  void SX3::MakeParticles(std::vector<SingleParticle*> &single_parts) {
-    int frontPairs = 0;
-    double frontSum = 0;
-    double pos = 0;
-    int stripID = 0;
-    float stripL = 0;
-    float stripR = 0;
-
-    for (int i=0; i<frontHits.size(); ++i) {
-      int subID1 = frontHits[i].ID;
-      int end1 = frontHits[i].side;
-      for (int j=i+1; j<frontHits.size(); ++j) {
-        int subID2 = frontHits[j].ID;
-        int end2 = frontHits[j].side;
-        if (subID1 == subID2) {
-          if (end1 == 1 && end2 == 0) {
-            frontPairs += 1;
-            stripID = subID1;
-            stripL = frontHits[j].value;
-            stripR = frontHits[i].value;
-            frontSum = frontHits[i].cal + frontHits[j].cal;
-          }
-          else if (end2 == 1 && end1 == 0) {
-            frontPairs += 1;
-            stripID = subID1;
-            stripL = frontHits[i].value;
-            stripR = frontHits[j].value;
-            frontSum = frontHits[i].cal + frontHits[j].cal;
-          }
-        }
-      }
+    if (nBB10Hits>0) {
+      out << "   BB10 " << ANSI_COLOR_YELLOW << nBB10Hits << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_YELLOW << nBB10HitsTh << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_GREEN << nBB10Particles << ANSI_COLOR_RESET << " reconstructed particles" << std::endl;
+      out << "         " << ANSI_COLOR_GREEN << (double)nBB10HitsTh/(double)nBB10Hits*100.0 << "%" << ANSI_COLOR_RESET << " hits above threshold" << std::endl;
+      out << "         " << ANSI_COLOR_GREEN << (double)nBB10HitsTh/(double)nBB10Particles << ANSI_COLOR_RESET << " hits above threshold/particle" << std::endl;
+      out << "         " << ANSI_COLOR_RED << nBadBB10Evts << ANSI_COLOR_RESET << " events with BB10 hits but no reconstructed particle (" << ANSI_COLOR_RED << (double)nBadBB10Evts/(double)nBB10Evts*100.0 << "%" << ANSI_COLOR_RESET << ")" << std::endl;
     }
-    int validBacks = 0;
-    float padEnergy = 0;
-    int padID = 0;
-    for (int i=0; i<backHits.size(); ++i) {
-      if (backHits[i].cal > 250.0) {
-        validBacks += 1;
-        padID = backHits[i].ID;
-        padEnergy = backHits[i].value; 
-      }
+    if (nSpuriousMyRIAD>0) {
+      out << "   " << ANSI_COLOR_RED << nSpuriousMyRIAD << ANSI_COLOR_RESET << " events " << std::endl;
     }
-    if (frontPairs == 1 && validBacks > 0) {
-      //validBacks == 1) {
-      //look through for closest back using naive energy calibration
-      float closest = 99999;
-      for (int i=0; i<backHits.size(); ++i) {
-        if (abs(backHits[i].cal - frontSum) < closest) {
-          closest = abs(backHits[i].cal - frontSum);
-          padID = backHits[i].ID;
-          padEnergy = backHits[i].value;
-        }
-      }
-      
-      //now we have matched, do calibrations
-      float padgain = Event::conf.sx3cals[ID-1].padgain[padID][stripID];
-      float padoff = Event::conf.sx3cals[ID-1].padoff[padID][stripID];
-
-      float stripLgain = Event::conf.sx3cals[ID-1].stripgain[0][padID][stripID];
-      float stripLoff = Event::conf.sx3cals[ID-1].stripoff[0][padID][stripID];
-
-      float stripRgain = Event::conf.sx3cals[ID-1].stripgain[1][padID][stripID];
-      float stripRoff = Event::conf.sx3cals[ID-1].stripoff[1][padID][stripID];
-
-      padEnergy = padEnergy*padgain + padoff;
-      stripL = stripL*stripLgain + stripLoff;
-      stripR = stripR*stripRgain + stripRoff;
-
-      frontSum = stripL + stripR;
-      //check energy equivalence
-      pos = (stripR - stripL)/frontSum;
-      pos = (pos - Event::conf.sx3cals[ID-1].stripPosOffset[stripID])*Event::conf.sx3cals[ID-1].stripPosGain[stripID];
-      
-      bool valid = (padEnergy/frontSum  >= 0.95 && padEnergy/frontSum <= 1.05);
-
-      SX3Particle *part = new SX3Particle(1, ID,
-                                          padID, stripID,
-                                          layer,
-                                          padEnergy, stripL, stripR, pos*uds, valid);
-      part->MakeCoords(this);
-      single_parts.push_back(part);
-    }
-    else {   }
-  }
-    
-    
-  QQQ5::QQQ5(unsigned short int channel, unsigned short int value) {
-    ID = Event::conf.detID[channel-1];
-    layer = Event::conf.layer[channel-1];
-    uds = Event::conf.UDS[channel-1];
-    nGoodFronts = 0;
-    nGoodBacks = 0;
-    float val = (value-Event::conf.pedestal[channel-1] + Orruba::Event::Dither());
-    float cal = val*Event::conf.gain[channel-1] + Event::conf.offset[channel-1];
-    /*
-      std::cout << "here" << std::endl;
-      std::cout << Event::conf.gain[channel-1] << "  " << Event::conf.offset[channel-1] << std::endl;
-      std::cout << val << "  " << cal << std::endl;
-    */
-    frontHits.reserve(32);
-    backHits.reserve(4);
-    if (Event::conf.side[channel-1] == 0) { //front
-      frontHits.emplace_back(Event::conf.subID[channel-1], val, cal);
-    }
-    else if (Event::conf.side[channel-1] == 1) { //back
-      backHits.emplace_back(Event::conf.subID[channel-1], val, cal);
-    }
-    else {
-      std::cerr << "Warning! Channel " << channel << " with invalid front/back value" << std::endl;
-    }
-  }
-  void QQQ5::AddHit(unsigned short int channel, unsigned short int value) {
-    float val = (value-Event::conf.pedestal[channel-1] + Orruba::Event::Dither());
-    float cal = val*Event::conf.gain[channel-1] + Event::conf.offset[channel-1];
-    /*
-      std::cout << "here" << std::endl;
-      std::cout << channel << "   " << Event::conf.gain[channel-1] << "  " << Event::conf.offset[channel-1] << std::endl;
-      std::cout << val << "  " << cal << std::endl;
-    */
-    if (Event::conf.side[channel-1] == 0) { //front
-      frontHits.emplace_back(Event::conf.subID[channel-1], val, cal);
-    }
-    else if (Event::conf.side[channel-1] == 1) { //back
-      backHits.emplace_back(Event::conf.subID[channel-1], val, cal);
-    }
-    else {
-      std::cerr << "Warning! Channel " << channel << " with invalid front/back value" << std::endl;
-    }
-  }
-
-  void QQQ5::MakeParticles(std::vector<SingleParticle*> &single_parts) {
-    nGoodFronts = 0;
-    nGoodBacks = 0;
-    int frontIDs[2];
-    int backIDs[2];
-    float frontEns[2];
-    float backEns[2];
-    float frontThresh;
-    float backThresh = 200;
-    float verbose = false;
-    /*
-      for (int i=0; i<frontHits.size(); ++i) {
-      if (frontHits[i].cal > 10000 && ID == 1) { verbose = true; }
-      }
-    */
-    if (verbose) { std::cout << "=====================================" << std::endl; }
-    if (ID <= 4) {
-      frontThresh = 300;
-    }
-    else {
-      frontThresh = 100;
-    }
-    for (int i=0; i<frontHits.size(); ++i) {
-      if (verbose) {std::cout << "fh " << i << " " << frontHits[i].ID << "  " << frontHits[i].cal << std::endl;}
-      if (frontHits[i].cal > frontThresh) { //use rough calibration here
-        nGoodFronts += 1;
-      }
-      else { continue; }
-      if (nGoodFronts > 2) { continue; }
-
-      frontIDs[nGoodFronts-1] = frontHits[i].ID;
-      frontEns[nGoodFronts-1] = frontHits[i].cal;      
-    }
-    for (int i=0; i<backHits.size(); ++i) {
-      if (verbose) {std::cout << "bh " << i << " " << backHits[i].ID << "  " << backHits[i].cal << std::endl;}
-      if (backHits[i].cal > backThresh) { //use rough calibration here
-        nGoodBacks += 1;
-      }
-      else { continue; }
-      if (nGoodBacks > 2) { continue; }
-
-      backIDs[nGoodBacks-1] = backHits[i].ID;
-      backEns[nGoodBacks-1] = backHits[i].cal;      
-    }
-
-    if ( nGoodFronts > 2 ) { return; }
-
-      
-    
-    float frontEn = 0;      
-    int frontID = 0;
-      
-    if (nGoodFronts == 1) {
-      frontEn = frontEns[0];
-      frontID = frontIDs[0];
-    }
-    else if (nGoodFronts == 2) {
-      if (abs(frontIDs[0]-frontIDs[1]) == 1) {
-        frontEn = frontEns[0] + frontEns[1];
-        if (frontEns[0] > frontEns[1]) { frontID = frontIDs[0]; }
-        else { frontID = frontIDs[1]; }
-      }
-      else {        
-        //std::cout << "F" << frontIDs[0] << " : " << frontEns[0] << std::endl;
-        //std::cout << "F" << frontIDs[1] << " : " << frontEns[1] << std::endl;
-        return;
-      }      
-    }
-
-    float backEn = 0;
-    int backID = 0;
-
-    if (nGoodBacks == 1) {
-      backEn = backEns[0];
-      backID = backIDs[0];
-    }
-    /*
-      else if (nGoodBacks == 2) {
-      if (abs(backIDs[0]-backIDs[1]) == 1) {
-      backEn = backEns[0] + backEns[1];
-      if (backEns[0] > backEns[1]) { backID = backIDs[0]; }
-      else { backID = backIDs[1]; }
-      }
-      else {
-      //std::cout << "B" << backIDs[0] << " : " << backEns[0] << std::endl;
-      //std::cout << "B" << backIDs[1] << " : " << backEns[1] << std::endl;
-      return;
-      }      
-      }
-    */
-    else {
-      //search for back with closest energy to fired front
-      float closest = 99999;
-      for (int i=0; i<backHits.size(); ++i) {
-        if (abs(backHits[i].cal - frontEn) < closest) {
-          closest = abs(backHits[i].cal - frontEn);
-          backID = backHits[i].ID;
-          backEn = backHits[i].cal;
-        }
-      }
-    }
-
-    bool valid = (frontEn/backEn >=0.95 && frontEn/backEn<=1.05);
-    QQQ5Particle *part = new QQQ5Particle(0, ID,
-                                          frontID, backID,
-                                          layer,
-                                          frontEn, backEn,
-                                          valid);
-    part->MakeCoords(this);
-    single_parts.push_back(part);
-
-  }
-
-  void QQQ5Particle::MakeCoords(QQQ5 *detector) {      
-    if (detector->layer == 0) { theta = Event::conf.dEthetas[frontID]*M_PI/180.0; }
-    else if (detector->layer == 1) { theta = Event::conf.Ethetas[frontID]*M_PI/180.0; }
-
-    float sector_phi = 2.0*M_PI/(16.); //width
-    float dphi = (backID)*sector_phi + sector_phi/2.;
-
-    float sector_off = 0.0; //pointing down, +x
-
-    //detector 0 -> 180, 1-> 270, 2-> 0, 3-> 90
-    //this is ABCD clockwise from beam down, starting at top right
-    //so A starts at +x, down, phi = 0
-    //B starts at +y BL, phi = 90
-    //C starts at -x up, phi = 180
-    //D starts at -y BR, phi = 270
-    sector_off = M_PI/2. * (float)((((detector->ID-1)%4) + 2)%4);
-
-    phi = sector_off + dphi;
-    r = Event::conf.radii[frontID]; //cylindrical r, not spherical polar
-      
-    if (detector->layer == 0) { z = Event::conf.dEdist; }
-    else if (detector->layer == 1) { z = Event::conf.Edist; }
-
-    x = r*std::cos(phi);
-    y = r*std::sin(phi);        
   }
 
   void SingleParticle::OffsetBeam(float beamx, float beamy, bool verbose) {

@@ -7,6 +7,53 @@
 #include "GRETINA/GretinaConf.hh"
 
 namespace Gret {
+  Array::Array() { dim = -1; }
+
+  Array::Array(int d) {
+    dim = d;
+    data = new double[d*d];
+  }
+
+  Array::Array(Array& other) {
+    Allocate(other.dim);
+    for (int i=0; i<dim; ++i) {
+      for (int j=0; j<dim; ++j) {
+        data[i*dim + j] = other.Get(i,j);
+      }
+    }
+  }
+  
+  Array::~Array() {
+    if (dim > 0) {
+      delete data;
+    }
+  }
+ 
+  void Array::Allocate(int d) {
+    dim = d;
+    data = new double[d*d];
+  }
+
+  void Array::Set(int i, int j, double val) {
+    data[i*dim + j] = val;
+  }
+
+  double Array::Get(int i, int j) const {
+    return data[i*dim + j];
+  }
+  
+  void Array::operator=(Array &other) {
+    if (dim > 0) {
+      delete data;
+    }
+    Allocate(other.dim);
+    for (int i=0; i<dim; ++i) {
+      for (int j=0; j<dim; ++j) {
+        data[i*dim + j] = other.Get(i,j);
+      }
+    }
+  }
+  
   int Configuration::ReadCrystalMap(std::string fn) {
     std::ifstream file(fn.c_str());
     std::string line;
@@ -22,16 +69,23 @@ namespace Gret {
       std::stringstream ss(line);
       if (prog == 0) {
         ss >> hole >> xtl;
+        CrystalMap[4*(hole-1)+xtl].Allocate(4);
         //std::cout << hole << "   " << xtl << std::endl;
         prog = 1;
       }
       else if (prog > 0 ) {
         double a, b, c, d;
         ss >> a >> b >> c >> d;
+        /*
         CrystalMap[{hole, xtl}][prog - 1][0] = a;
         CrystalMap[{hole, xtl}][prog - 1][1] = b;
         CrystalMap[{hole, xtl}][prog - 1][2] = c;
         CrystalMap[{hole, xtl}][prog - 1][3] = d;
+        */
+        CrystalMap[4*(hole-1)+xtl].Set(prog - 1, 0, a);
+        CrystalMap[4*(hole-1)+xtl].Set(prog - 1, 1, b);
+        CrystalMap[4*(hole-1)+xtl].Set(prog - 1, 2, c);
+        CrystalMap[4*(hole-1)+xtl].Set(prog - 1, 3, d);
         ++prog;
       }
       if (prog == 5) {
@@ -56,25 +110,63 @@ namespace Gret {
         prog = 0;
       }
     }
+
+    //pre-calculate crystal theta/phi coordinates for nearest-neighbour addback
+    for (int i=4; i<124; ++i) {
+      auto pos = GetPosition(i/4, i%4, 0.,0.,0.);
+      double PosX = pos[0];
+      double PosY = pos[1];
+      double PosZ = pos[2];
+
+      double x2y2 = std::sqrt(PosX*PosX + PosY*PosY);
+      double x2y2z2 = std::sqrt(PosX*PosX + PosY*PosY + PosZ*PosZ);
+      double costhet = PosZ/x2y2z2;
+      if (costhet >= -1.0 and costhet <= 1.0) {
+        CrystalTheta[i] = std::acos(costhet);
+        //std::cout << "Crystal = " << CrystalID << "   Theta = " << Theta*180.0/3.1415926535 << std::endl;
+      }
+      else {
+        std::cout << "Cos(theta) was out of range: " << costhet << std::endl;
+        std::cout << PosX << "   " << PosY << "   " << PosZ << std::endl;
+        CrystalTheta[i] = 0;
+      }
+      double cosphi = PosX/x2y2;
+      if (cosphi >= -1.0 and cosphi <= 1.0) {
+        CrystalPhi[i] = std::acos(cosphi);
+        if (PosY < 0) {
+          CrystalPhi[i] = 2.0*3.1415926536 - CrystalPhi[i];
+        }
+      }
+      else {
+        std::cout << "Cos(phi) was out of range: " << cosphi << std::endl;
+        CrystalPhi[i] = 0;
+      }
+    }
+
     return 0;
   }
   
   std::vector<double> Configuration::GetPosition(int hole, int xtl, double x, double y, double z) const {
+    /*
     const auto coords = CrystalMap.at({hole,xtl});
-
-    double ret_x = (coords[0][0] * x) + (coords[0][1] * y) + (coords[0][2] * z) + coords[0][3];
+double ret_x = (coords[0][0] * x) + (coords[0][1] * y) + (coords[0][2] * z) + coords[0][3];
     double ret_y = (coords[1][0] * x) + (coords[1][1] * y) + (coords[1][2] * z) + coords[1][3];
     double ret_z = (coords[2][0] * x) + (coords[2][1] * y) + (coords[2][2] * z) + coords[2][3];
+    */
 
+    const Array* coords = &CrystalMap[4*(hole-1)+xtl];
 
+    double ret_x = (coords->Get(0,0) * x) + (coords->Get(0,1) * y) + (coords->Get(0,2) * z) + coords->Get(0,3);
+    double ret_y = (coords->Get(1,0) * x) + (coords->Get(1,1) * y) + (coords->Get(1,2) * z) + coords->Get(1,3);
+    double ret_z = (coords->Get(2,0) * x) + (coords->Get(2,1) * y) + (coords->Get(2,2) * z) + coords->Get(2,3);
 
-
-
-    if (coords[1][3] > 0) { //beam left
+    if (coords->Get(1,3) > 0) { //beam left
       ret_y += BeamLeftOffset;
+      ret_z += BeamLeftZOffset;
     }
-    if (coords[1][3] < 0) { //beam right
+    if (coords->Get(1,3) < 0) { //beam right
       ret_y -= BeamRightOffset;
+      ret_z += BeamRightZOffset;
     }
     
     ret_x -= PosXOffset;
@@ -113,12 +205,12 @@ namespace Gret {
   int Configuration::ReadCalibration(std::string fn) {
     std::ifstream file(fn.c_str());
     std::cout << fn.c_str() << std::endl;
-    Calibration.clear();
     int id;
     double gain, offset, quad;
     while (file >> id >> offset >> gain >> quad) {
       std::cout << id << "   " << offset << "  " << gain << std::endl;
-      Calibration[id] = {offset,gain};
+      CalGain[id] = gain;
+      CalOffset[id] = offset;
     }
     return 0;
   }
