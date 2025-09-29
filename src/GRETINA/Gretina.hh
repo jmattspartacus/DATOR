@@ -46,7 +46,7 @@ namespace Gret {
     void Reset() { nhits = 0; ngammas = 0; hits.clear(); gammas.clear(); }
     void Process(unsigned long long timestamp, unsigned short int *data, unsigned short int length);
     void ProcessFinal() { nEvents += 1; BuildGammas(); }
-    void PrintSummary(std::ostream &out);
+    void PrintSummary(std::ostream &out, bool use_ansi_colors = true);
 
     ~Event() { }
 

@@ -200,6 +200,11 @@ namespace Orruba {
     //SetTitle(title.c_str());
   }
 
+  void Configuration::Set(std::string name, std::string title, std::string filename) {
+    ReadConfiguration(filename);
+  }
+
+
   void Configuration::SetThresholds(float thresh) {
     for (int i=0; i<threshold.size(); ++i) {
       threshold[i] = thresh;
@@ -342,28 +347,52 @@ namespace Orruba {
     return retval;
   }
 
-  void Event::PrintSummary(std::ostream &out) {
+  void Event::PrintSummary(std::ostream &out, bool use_ansi_colors) {
     out << "--------- ORRUBA Summary --------" << std::endl;
-    if (nQQQ5Hits>0) {
-      out << "   QQQ5 " << ANSI_COLOR_YELLOW << nQQQ5Hits << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_YELLOW << nQQQ5HitsTh << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_GREEN << nQQQ5Particles << ANSI_COLOR_RESET << " reconstructed particles" << std::endl;
-      out << "         " << ANSI_COLOR_GREEN << (double)nQQQ5HitsTh/(double)nQQQ5Hits*100.0 << "%" << ANSI_COLOR_RESET << " hits above threshold" << std::endl;
-      out << "         " << ANSI_COLOR_GREEN << (double)nQQQ5HitsTh/(double)nQQQ5Particles << ANSI_COLOR_RESET << " hits above threshold/particle" << std::endl;
-      out << "         " << ANSI_COLOR_RED << nBadQQQ5Evts << ANSI_COLOR_RESET << " events with QQQ5 hits but no reconstructed particle (" << ANSI_COLOR_RED << (double)nBadQQQ5Evts/(double)nQQQ5Evts*100.0 << "%" << ANSI_COLOR_RESET << ")" << std::endl;
-    }
-    if (nSX3Hits>0) {
-      out << "   SX3 " << ANSI_COLOR_YELLOW << nSX3Hits << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_YELLOW << nSX3HitsTh << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_GREEN << nSX3Particles << ANSI_COLOR_RESET << " reconstructed particles" << std::endl;
-      out << "         " << ANSI_COLOR_GREEN << (double)nSX3HitsTh/(double)nSX3Hits*100.0 << "%" << ANSI_COLOR_RESET << " hits above threshold" << std::endl;
-      out << "         " << ANSI_COLOR_GREEN << (double)nSX3HitsTh/(double)nSX3Particles << ANSI_COLOR_RESET << " hits above threshold/particle" << std::endl;
-      out << "         " << ANSI_COLOR_RED << nBadSX3Evts << ANSI_COLOR_RESET << " events with SX3 hits but no reconstructed particle (" << ANSI_COLOR_RED << (double)nBadSX3Evts/(double)nSX3Evts*100.0 << "%" << ANSI_COLOR_RESET << ")" << std::endl;
-    }
-    if (nBB10Hits>0) {
-      out << "   BB10 " << ANSI_COLOR_YELLOW << nBB10Hits << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_YELLOW << nBB10HitsTh << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_GREEN << nBB10Particles << ANSI_COLOR_RESET << " reconstructed particles" << std::endl;
-      out << "         " << ANSI_COLOR_GREEN << (double)nBB10HitsTh/(double)nBB10Hits*100.0 << "%" << ANSI_COLOR_RESET << " hits above threshold" << std::endl;
-      out << "         " << ANSI_COLOR_GREEN << (double)nBB10HitsTh/(double)nBB10Particles << ANSI_COLOR_RESET << " hits above threshold/particle" << std::endl;
-      out << "         " << ANSI_COLOR_RED << nBadBB10Evts << ANSI_COLOR_RESET << " events with BB10 hits but no reconstructed particle (" << ANSI_COLOR_RED << (double)nBadBB10Evts/(double)nBB10Evts*100.0 << "%" << ANSI_COLOR_RESET << ")" << std::endl;
-    }
-    if (nSpuriousMyRIAD>0) {
-      out << "   " << ANSI_COLOR_RED << nSpuriousMyRIAD << ANSI_COLOR_RESET << " events " << std::endl;
+    if(use_ansi_colors){
+      if (nQQQ5Hits>0) {
+        out << "   QQQ5 " << ANSI_COLOR_YELLOW << nQQQ5Hits << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_YELLOW << nQQQ5HitsTh << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_GREEN << nQQQ5Particles << ANSI_COLOR_RESET << " reconstructed particles" << std::endl;
+        out << "         " << ANSI_COLOR_GREEN << (double)nQQQ5HitsTh/(double)nQQQ5Hits*100.0 << "%" << ANSI_COLOR_RESET << " hits above threshold" << std::endl;
+        out << "         " << ANSI_COLOR_GREEN << (double)nQQQ5HitsTh/(double)nQQQ5Particles << ANSI_COLOR_RESET << " hits above threshold/particle" << std::endl;
+        out << "         " << ANSI_COLOR_RED << nBadQQQ5Evts << ANSI_COLOR_RESET << " events with QQQ5 hits but no reconstructed particle (" << ANSI_COLOR_RED << (double)nBadQQQ5Evts/(double)nQQQ5Evts*100.0 << "%" << ANSI_COLOR_RESET << ")" << std::endl;
+      }
+      if (nSX3Hits>0) {
+        out << "   SX3 " << ANSI_COLOR_YELLOW << nSX3Hits << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_YELLOW << nSX3HitsTh << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_GREEN << nSX3Particles << ANSI_COLOR_RESET << " reconstructed particles" << std::endl;
+        out << "         " << ANSI_COLOR_GREEN << (double)nSX3HitsTh/(double)nSX3Hits*100.0 << "%" << ANSI_COLOR_RESET << " hits above threshold" << std::endl;
+        out << "         " << ANSI_COLOR_GREEN << (double)nSX3HitsTh/(double)nSX3Particles << ANSI_COLOR_RESET << " hits above threshold/particle" << std::endl;
+        out << "         " << ANSI_COLOR_RED << nBadSX3Evts << ANSI_COLOR_RESET << " events with SX3 hits but no reconstructed particle (" << ANSI_COLOR_RED << (double)nBadSX3Evts/(double)nSX3Evts*100.0 << "%" << ANSI_COLOR_RESET << ")" << std::endl;
+      }
+      if (nBB10Hits>0) {
+        out << "   BB10 " << ANSI_COLOR_YELLOW << nBB10Hits << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_YELLOW << nBB10HitsTh << ANSI_COLOR_RESET << " -> " << ANSI_COLOR_GREEN << nBB10Particles << ANSI_COLOR_RESET << " reconstructed particles" << std::endl;
+        out << "         " << ANSI_COLOR_GREEN << (double)nBB10HitsTh/(double)nBB10Hits*100.0 << "%" << ANSI_COLOR_RESET << " hits above threshold" << std::endl;
+        out << "         " << ANSI_COLOR_GREEN << (double)nBB10HitsTh/(double)nBB10Particles << ANSI_COLOR_RESET << " hits above threshold/particle" << std::endl;
+        out << "         " << ANSI_COLOR_RED << nBadBB10Evts << ANSI_COLOR_RESET << " events with BB10 hits but no reconstructed particle (" << ANSI_COLOR_RED << (double)nBadBB10Evts/(double)nBB10Evts*100.0 << "%" << ANSI_COLOR_RESET << ")" << std::endl;
+      }
+      if (nSpuriousMyRIAD>0) {
+        out << "   " << ANSI_COLOR_RED << nSpuriousMyRIAD << ANSI_COLOR_RESET << " events " << std::endl;
+      }
+    } else {
+      if (nQQQ5Hits>0) {
+        out << "   QQQ5 " <<  nQQQ5Hits <<  " -> " <<  nQQQ5HitsTh <<  " -> " <<  nQQQ5Particles <<  " reconstructed particles" << std::endl;
+        out << "         " <<  (double)nQQQ5HitsTh/(double)nQQQ5Hits*100.0 << "%" <<  " hits above threshold" << std::endl;
+        out << "         " <<  (double)nQQQ5HitsTh/(double)nQQQ5Particles <<  " hits above threshold/particle" << std::endl;
+        out << "         " <<  nBadQQQ5Evts <<  " events with QQQ5 hits but no reconstructed particle (" <<  (double)nBadQQQ5Evts/(double)nQQQ5Evts*100.0 << "%" <<  ")" << std::endl;
+      }
+      if (nSX3Hits>0) {
+        out << "   SX3 " <<  nSX3Hits <<  " -> " <<  nSX3HitsTh <<  " -> " <<  nSX3Particles <<  " reconstructed particles" << std::endl;
+        out << "         " <<  (double)nSX3HitsTh/(double)nSX3Hits*100.0 << "%" <<  " hits above threshold" << std::endl;
+        out << "         " <<  (double)nSX3HitsTh/(double)nSX3Particles <<  " hits above threshold/particle" << std::endl;
+        out << "         " <<  nBadSX3Evts <<  " events with SX3 hits but no reconstructed particle (" <<  (double)nBadSX3Evts/(double)nSX3Evts*100.0 << "%" <<  ")" << std::endl;
+      }
+      if (nBB10Hits>0) {
+        out << "   BB10 " <<  nBB10Hits <<  " -> " <<  nBB10HitsTh <<  " -> " <<  nBB10Particles <<  " reconstructed particles" << std::endl;
+        out << "         " <<  (double)nBB10HitsTh/(double)nBB10Hits*100.0 << "%" <<  " hits above threshold" << std::endl;
+        out << "         " <<  (double)nBB10HitsTh/(double)nBB10Particles <<  " hits above threshold/particle" << std::endl;
+        out << "         " <<  nBadBB10Evts <<  " events with BB10 hits but no reconstructed particle (" <<  (double)nBadBB10Evts/(double)nBB10Evts*100.0 << "%" <<  ")" << std::endl;
+      }
+      if (nSpuriousMyRIAD>0) {
+        out << "   " <<  nSpuriousMyRIAD <<  " events " << std::endl;
+      }
     }
   }
 

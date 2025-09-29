@@ -25,24 +25,43 @@ namespace Gret {
     AddHit(timestamp, crys);
   }
 
-  void Event::PrintSummary(std::ostream &out) {
+  void Event::PrintSummary(std::ostream &out, bool use_ansi_colors) {
     out << "--------- Gretina Summary --------" << std::endl;
-    out << "   " << ANSI_COLOR_YELLOW << nValidGretina << ANSI_COLOR_RESET << "/" << ANSI_COLOR_GREEN << nGretina << ANSI_COLOR_RESET
-      << " valid Gretina (" << ANSI_COLOR_YELLOW << std::setprecision(4) << (float)nValidGretina/(float)nGretina*100.0 << "%" << ANSI_COLOR_RESET << ")"<< std::endl;
-    if (nBadT0 > 0) {
-      out << "      " << ANSI_COLOR_YELLOW << nBadT0 << ANSI_COLOR_RESET
-        << " bad t0 (" << ANSI_COLOR_YELLOW << std::setprecision(4) << (float)nBadT0/(float)nGretina*100.0 << "%" << ANSI_COLOR_RESET << ")"<< std::endl;
+    if (use_ansi_colors){
+      out << "   " << ANSI_COLOR_YELLOW << nValidGretina << ANSI_COLOR_RESET << "/" << ANSI_COLOR_GREEN << nGretina << ANSI_COLOR_RESET
+        << " valid Gretina (" << ANSI_COLOR_YELLOW << std::setprecision(4) << (float)nValidGretina/(float)nGretina*100.0 << "%" << ANSI_COLOR_RESET << ")"<< std::endl;
+      if (nBadT0 > 0) {
+        out << "      " << ANSI_COLOR_YELLOW << nBadT0 << ANSI_COLOR_RESET
+          << " bad t0 (" << ANSI_COLOR_YELLOW << std::setprecision(4) << (float)nBadT0/(float)nGretina*100.0 << "%" << ANSI_COLOR_RESET << ")"<< std::endl;
+      }
+      if (nBadIntE > 0) {
+        out << "      " << ANSI_COLOR_RED << nBadIntE << ANSI_COLOR_RESET
+          << " bad interaction energy (" << ANSI_COLOR_RED << std::setprecision(4) << (float)nBadIntE/(float)nGretina*100.0 << "%" << ANSI_COLOR_RESET << ")"<< std::endl;
+      }
+      if (nBadPAD > 0) {
+        out << "      " << ANSI_COLOR_RED << nBadPAD << ANSI_COLOR_RESET 
+          << " bad PAD (" << ANSI_COLOR_RED << std::setprecision(4) << (float)nBadPAD/(float)nGretina*100.0 << "%" << ANSI_COLOR_RESET << ")"<< std::endl;
+      }
+      out << "   " << ANSI_COLOR_YELLOW << nTotalGammas << ANSI_COLOR_RESET << " total gammas, " << ANSI_COLOR_GREEN << nEvents << ANSI_COLOR_RESET << " events" << std::endl;
+      out <<"  average gamma-ray multiplicity " << ANSI_COLOR_GREEN << (float)nTotalGammas/(float)nEvents << ANSI_COLOR_RESET << std::endl;
+    } else {
+      out << "   " <<  nValidGretina <<  "/" <<  nGretina 
+        << " valid Gretina (" <<  std::setprecision(4) << (float)nValidGretina/(float)nGretina*100.0 << "%" <<  ")"<< std::endl;
+      if (nBadT0 > 0) {
+        out << "      " <<  nBadT0 
+          << " bad t0 (" <<  std::setprecision(4) << (float)nBadT0/(float)nGretina*100.0 << "%" <<  ")"<< std::endl;
+      }
+      if (nBadIntE > 0) {
+        out << "      " <<  nBadIntE 
+          << " bad interaction energy (" <<  std::setprecision(4) << (float)nBadIntE/(float)nGretina*100.0 << "%" <<  ")"<< std::endl;
+      }
+      if (nBadPAD > 0) {
+        out << "      " <<  nBadPAD  
+          << " bad PAD (" <<  std::setprecision(4) << (float)nBadPAD/(float)nGretina*100.0 << "%" <<  ")"<< std::endl;
+      }
+      out << "   " <<  nTotalGammas <<  " total gammas, " <<  nEvents <<  " events" << std::endl;
+      out <<"  average gamma-ray multiplicity " <<  (float)nTotalGammas/(float)nEvents <<  std::endl;
     }
-    if (nBadIntE > 0) {
-      out << "      " << ANSI_COLOR_RED << nBadIntE << ANSI_COLOR_RESET
-        << " bad interaction energy (" << ANSI_COLOR_RED << std::setprecision(4) << (float)nBadIntE/(float)nGretina*100.0 << "%" << ANSI_COLOR_RESET << ")"<< std::endl;
-    }
-    if (nBadPAD > 0) {
-      out << "      " << ANSI_COLOR_RED << nBadPAD << ANSI_COLOR_RESET 
-        << " bad PAD (" << ANSI_COLOR_RED << std::setprecision(4) << (float)nBadPAD/(float)nGretina*100.0 << "%" << ANSI_COLOR_RESET << ")"<< std::endl;
-    }
-    out << "   " << ANSI_COLOR_YELLOW << nTotalGammas << ANSI_COLOR_RESET << " total gammas, " << ANSI_COLOR_GREEN << nEvents << ANSI_COLOR_RESET << " events" << std::endl;
-    out <<"  average gamma-ray multiplicity " << ANSI_COLOR_GREEN << (float)nTotalGammas/(float)nEvents << ANSI_COLOR_RESET << std::endl;
   }
 
   int Event::AddHit(const int64_t GEBtimestamp,

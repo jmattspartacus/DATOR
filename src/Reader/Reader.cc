@@ -57,8 +57,15 @@ namespace DATOR {
           continue;
         }
         std::stringstream st(tline);
-        st >> indx >> path;
-
+        st >> indx >> path >> trailing;
+        //uncomment if you want explicit output of the run numbers!
+        std::cout << "Run num: " << indx << " Path: " << path << " Trailing: " << trailing << std::endl;
+        
+        if (runNos.size()>0) {
+          if (runNos[runNos.size()-1] == indx) {
+            std::cerr << "Warning! Same run number encountered twice?" << std::endl;
+          }
+        }
         runPaths.push_back(path);
         runNos.push_back(indx);
         if (!path.substr(path.size()-7).compare(".dat.gz")) {
@@ -84,29 +91,26 @@ namespace DATOR {
     
    */
   int Reader::NextFile() {
-    fileIndx += 1;
-    if (fCompressed) {
-      if (fileIndx >= (int)runPaths.size()) {
+    while(true){
+      fileIndx += 1;
+      if (fCompressed) {
         if (DataFile != 0) { gzclose(gDataFile); }
         if (PrunedFile != 0) { gzclose(gPrunedFile); }
-        return 0;
-      }
-    }
-    else {
-      if (fileIndx >= (int)runPaths.size()) {
+      } else {
         if (DataFile != 0) { fclose(DataFile); }
         if (PrunedFile != 0) { fclose(PrunedFile); }
+      }
+      if (fileIndx >= (int)runPaths.size()) {
         return 0;
+      }
+      DataFile = fopen(runPaths[fileIndx].c_str(), "r");
+      if (!DataFile) { std::cerr << "File " << runPaths[fileIndx] << " does not exist! Trying next!" << std::endl;}
+      if(DataFile != 0){
+        break;
       }
     }
 
-    if (fCompressed) {
-      if (DataFile != 0) { gzclose(gDataFile); }
-      if (PrunedFile != 0) { gzclose(gPrunedFile); }
-    }
     
-    DataFile = fopen(runPaths[fileIndx].c_str(), "r");
-    if (!DataFile) { std::cerr << "File " << runPaths[fileIndx] << " does not exist!" << std::endl; return 0; }
     if (PrunedOutput) {
       if (!prunedPaths[fileIndx].compare(runPaths[fileIndx])) { std::cerr << "Pruned file (output) is the same as input file!" << std::endl; exit(1); }
       PrunedFile = fopen((prunedPaths[fileIndx]).c_str(), "w");
@@ -356,26 +360,48 @@ namespace DATOR {
 
   /*! Print summary of sorting, usually at the end of each file. This function calls Processor::PrintSummary for each processor loaded.
    */
-  int Reader::PrintSummary(std::ostream &out) {
+  int Reader::PrintSummary(std::ostream &out, bool use_ansi_colors) {
     double duration = (double)(std::chrono::duration_cast <std::chrono::microseconds> (stop_time - start_time).count());
-    
-    out << "================= " << ANSI_COLOR_GREEN << nEvents << ANSI_COLOR_RESET << " events sorted in " << ANSI_COLOR_GREEN << (int)duration/1000000 << " s " << ANSI_COLOR_RESET << "================= " << std::endl;
-    out << "   " << ANSI_COLOR_RED << nOutOfOrder << ANSI_COLOR_RESET << " out of time-order" << std::endl;
-    
-    for (int geb=0; geb<MAX_GEB_TYPE; ++geb) {
-      if (nGEBTypes[geb] > 0) {
-        out << "   Type " << geb << ": " << ANSI_COLOR_GREEN << nGEBTypes[geb] << ANSI_COLOR_RESET << " sub-events" << std::endl;
-      }
-    }
-    
-    out << "   Run was " << ANSI_COLOR_GREEN << walltime-starttime << ANSI_COLOR_RESET <<" min long from timestamps" << std::endl;
-    out << std::setprecision(6);
+    if(use_ansi_colors){
+      out << "================= " << ANSI_COLOR_GREEN << nEvents << ANSI_COLOR_RESET << " events sorted in " << ANSI_COLOR_GREEN << (int)duration/1000000 << " s " << ANSI_COLOR_RESET << "================= " << std::endl;
+      out << "   " << ANSI_COLOR_RED << nOutOfOrder << ANSI_COLOR_RESET << " out of time-order" << std::endl;
 
-    for (int geb=0; geb<MAX_GEB_TYPE; ++geb) {
-      for (size_t i=0; i<processors[geb].size(); ++i) {
-        processors[geb][i]->PrintSummary(out);
+      for (int geb=0; geb<MAX_GEB_TYPE; ++geb) {
+        if (nGEBTypes[geb] > 0) {
+          out << "   Type " << geb << ": " << ANSI_COLOR_GREEN << nGEBTypes[geb] << ANSI_COLOR_RESET << " sub-events" << std::endl;
+        }
+      }
+      
+      out << "   Run was " << ANSI_COLOR_GREEN << walltime-starttime << ANSI_COLOR_RESET <<" min long from timestamps" << std::endl;
+      out << std::setprecision(6);
+
+      for (int geb=0; geb<MAX_GEB_TYPE; ++geb) {
+        for (size_t i=0; i<processors[geb].size(); ++i) {
+          processors[geb][i]->PrintSummary(out);
+        }
+      }
+    } else {
+      out << "================= " << nEvents  << " events sorted in " << (int)duration/1000000 << " s " << "================= " << std::endl;
+      out << "   " << nOutOfOrder << " out of time-order" << std::endl;
+
+      for (int geb=0; geb<MAX_GEB_TYPE; ++geb) {
+        if (nGEBTypes[geb] > 0) {
+          out << "   Type " << geb << ": " << nGEBTypes[geb] << " sub-events" << std::endl;
+        }
+      }
+      
+      out << "   Run was " << walltime-starttime <<" min long from timestamps" << std::endl;
+      out << std::setprecision(6);
+
+      for (int geb=0; geb<MAX_GEB_TYPE; ++geb) {
+        for (size_t i=0; i<processors[geb].size(); ++i) {
+          processors[geb][i]->PrintSummary(out);
+        }
       }
     }
+    
+    
+    
 
     /*
     out << "   " << ANSI_COLOR_YELLOW << nValidGretina << ANSI_COLOR_RESET << "/" << ANSI_COLOR_GREEN << nGretinaHits << ANSI_COLOR_RESET

@@ -289,7 +289,7 @@ namespace Orruba {
     void ProcessFinal() {};
     
     void SetConf(Configuration c) { conf = c; }
-    void PrintSummary(std::ostream &out);
+    void PrintSummary(std::ostream &out, bool use_ansi_colors = true);
 
   };
 

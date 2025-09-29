@@ -34,7 +34,7 @@ namespace DATOR {
      */
     virtual void ProcessFinal() = 0;
     /*! Print summary of statistics/diagnostics, typically at the end of a run or file. */
-    virtual void PrintSummary(std::ostream &out) {};
+    virtual void PrintSummary(std::ostream &out, bool use_ansi_colors = false) {};
   };
 
   /*! Control object for I/O, time correlation (event building), and iterating through the data file(s). Processors are loaded into this class for use.
@@ -262,15 +262,15 @@ namespace DATOR {
     /*! Get wall time */
     double GetWallTime() { return walltime; }
     /*! Get global wall time - since beginning of experiment */
-    double GetGlobalWallTime() { if (ts_mode == 1) { return walltime; } else if ( ts_mode == 0 ) { return run_wt_offset + walltime; } };
+    double GetGlobalWallTime() { if (ts_mode == 1) { return walltime; } else if ( ts_mode == 0 ) { return run_wt_offset + walltime; } return 0.0;};
     /*! Get run wall time - since beginning of run */
-    double GetRunWallTime() { if (ts_mode == 1) { return (walltime - run_wt_offset); } else if ( ts_mode == 0 ) { return walltime; } };
+    double GetRunWallTime() { if (ts_mode == 1) { return (walltime - run_wt_offset); } else if ( ts_mode == 0 ) { return walltime; } return 0.0; };
     /*! Sets the run number */
     void SetRunNo(int rn) { runNos.clear(); runNos.push_back(rn); }
     std::string GetPath();
     int Next();
     int Write();
-    int PrintSummary(std::ostream &out);
+    int PrintSummary(std::ostream &out, bool use_ansi_colors = true);
   };
 
   class BasicProcessor : public DATOR::Processor {
