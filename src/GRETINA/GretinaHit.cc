@@ -8,6 +8,7 @@ namespace Gret {
   int GretinaHit::Build(const int64_t GEBtimestamp,
                         const crys_intpts *data) {
 
+    if (data->crystal_id < 4) { std::cerr << "bad Gretina hit with CrystalID="<<data->crystal_id<<"! ignoring" << std::endl; valid = false; return -1; }
     // IMPORTANT: Please note!
     //
     // cryst_intpts is a struct of fixed length, corresponding to the MAXIMUM number of interaction points (16).
@@ -37,7 +38,6 @@ namespace Gret {
     t0 = data->t0;
     timestamp = GEBtimestamp; //units 10 ns
 
-    if (Hole < 4) { std::cerr << "bad Gretina hit! ignoring" << std::endl; valid = false; return -1; }
 
     if (Event::conf.PAD128) {
       if (PAD != 0 && PAD != 128) { valid = false; }

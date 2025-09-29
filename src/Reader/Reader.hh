@@ -250,6 +250,7 @@ namespace DATOR {
     {}
     
     Reader(std::string fn) : Reader() { DataFile = fopen(fn.c_str(), "r"); gDataFile = gzdopen(fileno(DataFile), "r"); }
+    ~Reader() { }
     static double GetDither();
     int LoadPaths(std::string fn);
     int NextFile();

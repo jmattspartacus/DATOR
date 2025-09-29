@@ -11,6 +11,7 @@ namespace Gret {
 
     std::vector<int> hitInds;
     int nHits;
+    int nInts;
     
     int FirstInt;
     int ID;

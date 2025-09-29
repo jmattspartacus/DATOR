@@ -73,6 +73,7 @@ namespace Gret {
     if (hits[nhits].Build(GEBtimestamp, data) >= 0) {
       if (hits[nhits].valid) {
         nValidGretina += 1;
+        gammaSum += hits[nhits].TotalEnergy;
       }
       if (hits[nhits].BadIntE) {
         nBadIntE += 1;
@@ -103,6 +104,7 @@ namespace Gret {
           if (hit_j.valid == false) { continue; }
           if (conf.AddbackDets[hit_j.CrystalID] == 0) { continue; }
           if (addbacks[i] == 1 || addbacks[j] == 1) { continue; }
+          if (std::abs(hit_i.Time - hit_j.Time) > conf.AddbackTDiff) { continue; }
           bool inside = false;
 
           if (conf.Addback == AddbackType::Cluster2Xtl) {
@@ -145,6 +147,8 @@ namespace Gret {
         for (int j=0; j<ngammas; ++j) { //search through list of gammas and check if this hit is within cone
           if (conf.AddbackDets[hit_i.CrystalID] == 0) { break; }
           auto &gam_j = gammas[j];
+          if (conf.AddbackDets[gam_j.ID] == 0) { continue; }
+          if (std::abs(hit_i.Time - gam_j.Time) > conf.AddbackTDiff) { continue; }
           bool inside = false;
           if (conf.Addback == AddbackType::ClusterAnyXtl) {
             double costhet = std::sin(hit_i.Theta)*std::sin(gam_j.Theta)*std::cos(hit_i.Phi - gam_j.Phi) + std::cos(hit_i.Theta)*std::cos(gam_j.Theta);

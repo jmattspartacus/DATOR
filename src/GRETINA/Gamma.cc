@@ -6,6 +6,7 @@ namespace Gret {
   Gamma::Gamma(double en, int nh, int *inds) :
       Energy(en), FirstInt(0), Theta(0), Phi(0), ID(0), Time(0), nHits(nh) { 
 	      hitInds.reserve(nh); 
+              nInts = 0;
 	      for (int i=0; i<nh; ++i) {hitInds.push_back(inds[i]);} 
       }
 
@@ -27,6 +28,7 @@ namespace Gret {
 	Fix = hit.BadIntE || hit.BadT0;
 	Efficiency = Event::conf.Efficiency(hit.TotalEnergy);
 	nHits = 1;
+        nInts = hit.nInteractions;
 	hitInds.push_back(indx);	
     }
     void Gamma::Set(double en, int nh, int *inds, int fi, double t, double p, int id, long long int time, bool fx, float eff) {
@@ -48,6 +50,7 @@ namespace Gret {
 	    Fix = Fix || (hit.BadIntE || hit.BadT0);
 	    Efficiency = Event::conf.Efficiency(Energy);
 	    nHits += 1;
+            nInts += hit.nInteractions;
 	    hitInds.push_back(indx);
 
     }
