@@ -47,6 +47,7 @@ namespace DATOR {
       if (!infile.is_open()) { std::cerr << fn << " not found!" << std::endl; return -1; }
       
       std::string tline;
+      std::string trailing;
       int indx;
       std::string path;
 

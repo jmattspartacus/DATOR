@@ -200,9 +200,6 @@ namespace Orruba {
     //SetTitle(title.c_str());
   }
 
-  void Configuration::Set(std::string name, std::string title, std::string filename) {
-    ReadConfiguration(filename);
-  }
 
 
   void Configuration::SetThresholds(float thresh) {
